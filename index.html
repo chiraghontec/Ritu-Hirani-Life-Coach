@@ -174,9 +174,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .es{text-align:center;padding:28px;color:var(--tx3);font-size:13px}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--brand);color:#fff;padding:11px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s}
 .toast.show{transform:translateY(0);opacity:1}
+
+/* AUTH OVERLAY */
+#authOverlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--wh);border-radius:18px;border:1px solid var(--bdr);padding:40px 36px;width:380px;max-width:94vw;text-align:center;box-shadow:0 4px 32px rgba(74,35,90,.1)}
+.auth-logo{width:58px;height:58px;border-radius:50%;background:var(--bl);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.auth-brand{font-size:21px;font-weight:700;color:var(--brand);margin-bottom:3px}
+.auth-sub{font-size:13px;color:var(--tx2);margin-bottom:28px}
+.auth-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 16px;border-radius:var(--rs);border:1.5px solid var(--bdr);background:var(--wh);font-size:14px;font-weight:500;cursor:pointer;color:var(--tx);transition:background .15s}
+.auth-btn:hover{background:var(--bg)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-err{margin-top:12px;font-size:12px;color:var(--dg);min-height:18px;line-height:1.5}
+.auth-note{margin-top:20px;font-size:11px;color:var(--tx3);line-height:1.6}
 </style>
 </head>
 <body>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="24" height="24" fill="none" stroke="#4A235A" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="auth-brand">Ritu Hirani</div>
+    <div class="auth-sub">Life Coach · Ops Dashboard</div>
+    <button class="auth-btn" id="authBtn" onclick="startGoogleSignIn()">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-err" id="authErr"></div>
+    <div class="auth-note">Access restricted to authorized team members only</div>
+  </div>
+</div>
 
 <nav class="sidebar">
   <div class="sb-logo">
@@ -1070,9 +1099,7 @@ function gDisc(){
 
 function gAuth(cid){
   if(!cid)return;
-  const sc=document.createElement('script');
-  sc.src='https://accounts.google.com/gsi/client';
-  sc.onload=()=>{
+  function _initTC(){
     window._tc=google.accounts.oauth2.initTokenClient({
       client_id:cid,
       scope:'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
@@ -1086,7 +1113,11 @@ function gAuth(cid){
       }
     });
     window._tc.requestAccessToken();
-  };
+  }
+  if(_gisLoaded){_initTC();return;}
+  const sc=document.createElement('script');
+  sc.src='https://accounts.google.com/gsi/client';
+  sc.onload=()=>{_gisLoaded=true;_initTC();};
   document.head.appendChild(sc);
 }
 
@@ -1127,8 +1158,67 @@ function saveClient(){
 }
 
 // ══════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════
+const ALLOWED_EMAILS=['team.rituhirani@gmail.com','lifecoach.rituhirani@gmail.com','counselorsdesk05@gmail.com'];
+const AUTH_CID='572717103960-a1ibp9q8cdqlc6tptg6lu5htm4p2nfjj.apps.googleusercontent.com';
+let _gisLoaded=false;
+
+function checkAuth(){
+  const saved=sessionStorage.getItem('rh_auth_email');
+  if(saved&&ALLOWED_EMAILS.includes(saved)){grantAccess();return;}
+  // overlay already visible by default
+}
+
+function grantAccess(){
+  document.getElementById('authOverlay').style.display='none';
+}
+
+function setAuthErr(msg){
+  const el=document.getElementById('authErr');
+  if(el)el.textContent=msg;
+  const btn=document.getElementById('authBtn');
+  if(btn){btn.disabled=false;btn.textContent='';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>Try again';}
+}
+
+function startGoogleSignIn(){
+  const btn=document.getElementById('authBtn');
+  if(btn){btn.disabled=true;btn.textContent='Signing in…';}
+  document.getElementById('authErr').textContent='';
+
+  function _initAuth(){
+    window._authTC=google.accounts.oauth2.initTokenClient({
+      client_id:AUTH_CID,
+      scope:'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      callback:async(r)=>{
+        if(r.error){setAuthErr('Sign-in failed: '+r.error);return;}
+        try{
+          const res=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:'Bearer '+r.access_token}});
+          const info=await res.json();
+          if(ALLOWED_EMAILS.includes(info.email)){
+            sessionStorage.setItem('rh_auth_email',info.email);
+            grantAccess();
+          }else{
+            setAuthErr('Access denied. '+info.email+' is not authorized.');
+          }
+        }catch(e){setAuthErr('Could not verify account. Try again.');}
+      }
+    });
+    window._authTC.requestAccessToken();
+  }
+
+  if(_gisLoaded){_initAuth();return;}
+  const sc=document.createElement('script');
+  sc.src='https://accounts.google.com/gsi/client';
+  sc.onload=()=>{_gisLoaded=true;_initAuth();};
+  sc.onerror=()=>setAuthErr('Failed to load Google Sign-In. Check connection.');
+  document.head.appendChild(sc);
+}
+
+// ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
+checkAuth();
 loadFirebaseConfig();
 rToday();
 const scid=localStorage.getItem('rh_gcid');
