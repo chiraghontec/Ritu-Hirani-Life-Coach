@@ -4,190 +4,185 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ritu Hirani | Life Coach — Ops Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <style>
-:root {
-  --brand:#4A235A;--brand-mid:#7B3FA0;--brand-light:#F3EAF9;--brand-accent:#7F77DD;
-  --white:#FFFFFF;--bg:#F8F7FC;--card:#FFFFFF;--border:#E8E0F0;
-  --text:#1A1A1A;--text2:#666;--text3:#999;
-  --ok:#1A7A3C;--ok-bg:#E6F4EC;--warn:#C4601A;--warn-bg:#FDF0E8;
-  --danger:#C0392B;--danger-bg:#FAECE7;
-  --sess-bg:#EEEDFE;--sess-text:#3C3489;
-  --r:12px;--rs:8px;--sw:220px;--th:64px;
+:root{
+  --brand:#4A235A;--bl:#F3EAF9;--acc:#7F77DD;
+  --wh:#fff;--bg:#F8F7FC;--bdr:#E8E0F0;
+  --tx:#1A1A1A;--tx2:#666;--tx3:#999;
+  --ok:#1A7A3C;--okb:#E6F4EC;--wn:#C4601A;--wnb:#FDF0E8;
+  --dg:#C0392B;--dgb:#FAECE7;
+  --sb:#EEEDFE;--st:#3C3489;
+  --r:12px;--rs:8px;--sw:228px;--th:64px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
 
-/* SIDEBAR */
-.sb{width:var(--sw);background:var(--brand);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
-.sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
-.sb-logo .ln{font-size:16px;font-weight:600;color:#fff}
-.sb-logo .ls{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
-.nav-sec{padding:12px 8px;flex:1}
-.nl{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(255,255,255,.4);text-transform:uppercase;padding:8px 10px 4px}
-.ni{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rs);cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;user-select:none}
+.sidebar{width:var(--sw);background:var(--brand);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.15)}
+.sb-logo .ln{font-size:15px;font-weight:600;color:#fff}
+.sb-logo .ls{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.nav-sec{padding:10px 8px;flex:1;overflow-y:auto}
+.nl{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(255,255,255,.35);text-transform:uppercase;padding:8px 10px 4px}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--rs);cursor:pointer;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px;user-select:none}
 .ni:hover{background:rgba(255,255,255,.1);color:#fff}
-.ni.active{background:var(--brand-light);color:var(--brand)}
-.ni svg{width:16px;height:16px;flex-shrink:0}
-.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.15)}
-.sync-st{font-size:11px;color:rgba(255,255,255,.5)}
-.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#888;margin-right:4px;vertical-align:middle}
-.sync-btn{margin-top:8px;width:100%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:12px;padding:7px 12px;border-radius:var(--rs);cursor:pointer;transition:background .15s}
-.sync-btn:hover{background:rgba(255,255,255,.25)}
+.ni.active{background:var(--bl);color:var(--brand)}
+.ni svg{width:15px;height:15px;flex-shrink:0}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.15)}
+.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.45);margin-bottom:6px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#888;flex-shrink:0;transition:background .3s}
+.sdot.ok{background:#4caf50}.sdot.warn{background:#ff9800}.sdot.err{background:#f44336}
+.sync-btn{width:100%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:12px;padding:7px 10px;border-radius:var(--rs);cursor:pointer;transition:background .15s;text-align:left;display:flex;align-items:center;gap:6px}
+.sync-btn:hover{background:rgba(255,255,255,.22)}
+.live-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(76,175,80,.2);color:#81c784;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;margin-left:auto}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#4caf50;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* MAIN */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
-.topbar{height:var(--th);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50}
-.topbar-info{flex:1}
-.topbar-title{font-size:18px;font-weight:600}
-.topbar-date{font-size:12px;color:var(--text2);margin-top:1px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,transform .1s}
+.topbar{height:var(--th);background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:50}
+.tb-info{flex:1}
+.tb-title{font-size:17px;font-weight:600}
+.tb-date{font-size:12px;color:var(--tx2);margin-top:1px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,transform .1s}
 .btn:active{transform:scale(.97)}
 .btn-p{background:var(--brand);color:#fff}.btn-p:hover{opacity:.9}
-.btn-o{background:transparent;border:1.5px solid var(--border);color:var(--text)}.btn-o:hover{background:var(--bg)}
-.content{padding:24px;flex:1}
+.btn-o{background:transparent;border:1.5px solid var(--bdr);color:var(--tx)}.btn-o:hover{background:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.content{padding:22px;flex:1}
 .view{display:none}.view.active{display:block}
 
-/* CARDS */
-.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px}
-.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card{background:var(--wh);border-radius:var(--r);border:1px solid var(--bdr);padding:18px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .ct{font-size:14px;font-weight:600}
-.cc{background:var(--brand-light);color:var(--brand);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.cc{background:var(--bl);color:var(--brand);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 
-/* GRID */
-.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:var(--wh);border:1px solid var(--bdr);border-radius:var(--rs);padding:13px 15px}
+.sl{font-size:11px;color:var(--tx2);margin-bottom:3px}
+.sv{font-size:22px;font-weight:600;color:var(--brand)}
+.ss{font-size:11px;color:var(--tx3);margin-top:1px}
 
-/* STAT */
-.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px}
-.sl{font-size:11px;color:var(--text2);margin-bottom:4px}
-.sv{font-size:24px;font-weight:600;color:var(--brand)}
-.ss{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* TASK */
-.ti{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ti{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid var(--bdr)}
 .ti:last-child{border-bottom:none}
-.tck{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.tck{width:17px;height:17px;border-radius:50%;border:2px solid var(--bdr);cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;display:flex;align-items:center;justify-content:center}
 .tck.done{background:var(--brand);border-color:var(--brand)}
-.tck.done::after{content:'';width:6px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block}
-.tb{flex:1}
+.tck.done::after{content:'';width:5px;height:3px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block}
+.tb2{flex:1}
 .tt{font-size:13px;font-weight:500;line-height:1.4}
-.tt.done{text-decoration:line-through;color:var(--text3)}
+.tt.done{text-decoration:line-through;color:var(--tx3)}
 .tm{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}
-.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
-.tg-s{background:var(--sess-bg);color:var(--sess-text)}
-.tg-a{background:#F1EFE8;color:#444}
-.tg-e{background:#E6F1FB;color:#0C447C}
-.tg-c{background:#FAEEDA;color:#633806}
-.tg-f{background:#FAECE7;color:#712B13}
-.tg-g{background:#E8F0FA;color:#185FA5}
-.tdel{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;opacity:0;padding:2px 4px;border-radius:4px;transition:opacity .15s}
-.ti:hover .tdel{opacity:1}
-.tdel:hover{color:var(--danger)}
+.tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+.tg-s{background:var(--sb);color:var(--st)}.tg-a{background:#F1EFE8;color:#444}
+.tg-e{background:#E6F1FB;color:#0C447C}.tg-c{background:#FAEEDA;color:#633806}
+.tg-f{background:#FAECE7;color:#712B13}.tg-g{background:#E8F0FA;color:#185FA5}
+.tg-cal{background:#E8F5E9;color:#2E7D32}
+.tdel{background:none;border:none;cursor:pointer;color:var(--tx3);font-size:17px;line-height:1;opacity:0;padding:2px 4px;border-radius:4px;transition:opacity .15s}
+.ti:hover .tdel{opacity:1}.tdel:hover{color:var(--dg)}
 
-/* SESSION BLOCK */
-.sb2{padding:10px 12px;border-radius:var(--rs);margin-bottom:8px}
-.sb2.session{background:var(--sess-bg);border-left:3px solid var(--sess-text)}
-.sb2.empty{background:var(--bg);border-left:3px solid var(--border)}
-.sbt{font-size:11px;color:var(--text3);margin-bottom:2px}
-.sbn{font-size:13px;font-weight:600;color:var(--sess-text)}
-.sbp{font-size:11px;color:var(--text2)}
+.sb2{padding:9px 11px;border-radius:var(--rs);margin-bottom:7px}
+.sb2.session{background:var(--sb);border-left:3px solid var(--st)}
+.sb2.empty{background:var(--bg);border-left:3px solid var(--bdr)}
+.sbt{font-size:10px;color:var(--tx3);margin-bottom:2px}
+.sbn{font-size:13px;font-weight:600;color:var(--st)}
+.sbp{font-size:11px;color:var(--tx2)}
 
-/* ACTION */
-.ai{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:var(--rs);margin-bottom:6px;font-size:12px}
-.ad{width:6px;height:6px;border-radius:50%;background:var(--warn);flex-shrink:0}
-.ad.u{background:var(--danger)}.ad.k{background:var(--ok)}
+.ai{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--bg);border-radius:var(--rs);margin-bottom:5px;font-size:12px}
+.ad{width:6px;height:6px;border-radius:50%;background:var(--wn);flex-shrink:0}
+.ad.u{background:var(--dg)}.ad.k{background:var(--ok)}
 
-/* PIPELINE */
-.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start}
-.ph{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.pc{background:var(--border);color:var(--text2);font-size:10px;padding:1px 6px;border-radius:20px}
-.cc2{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s}
-.cc2:hover{border-color:var(--brand-accent);transform:translateY(-1px)}
-.av{width:32px;height:32px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;align-items:start}
+.ph{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--tx2);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.pc{background:var(--bdr);color:var(--tx2);font-size:10px;padding:1px 6px;border-radius:20px}
+.cc2{background:var(--wh);border:1px solid var(--bdr);border-radius:var(--rs);padding:11px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,transform .1s}
+.cc2:hover{border-color:var(--acc);transform:translateY(-1px)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--bl);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
 .cn{font-size:13px;font-weight:600;margin-bottom:2px}
-.cpk{font-size:11px;color:var(--text2);margin-bottom:6px}
-.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;text-transform:uppercase}
-.b-paid{background:var(--ok-bg);color:var(--ok)}
-.b-pend{background:var(--warn-bg);color:var(--warn)}
-.b-part{background:#E6F1FB;color:#0C447C}
+.cpk{font-size:11px;color:var(--tx2);margin-bottom:5px}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase}
+.b-paid{background:var(--okb);color:var(--ok)}.b-pend{background:var(--wnb);color:var(--wn)}.b-part{background:#E6F1FB;color:#0C447C}
 .pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-top:4px}
-.pfill{height:100%;background:var(--brand-accent);border-radius:2px;transition:width .3s}
+.pfill{height:100%;background:var(--acc);border-radius:2px;transition:width .3s}
 
-/* SESSIONS TABLE */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);border-bottom:2px solid var(--border)}
-.tbl td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl th{text-align:left;padding:9px 11px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--tx2);border-bottom:2px solid var(--bdr)}
+.tbl td{padding:10px 11px;border-bottom:1px solid var(--bdr);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
-.tbl tr:hover td{background:var(--brand-light)}
-.spr{display:flex;align-items:center;gap:8px}
-.sbar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
-.sbf{height:100%;background:var(--brand-accent);border-radius:3px}
-.sfr{font-size:12px;color:var(--text2);white-space:nowrap}
-.eb{font-size:11px;padding:3px 8px;border-radius:20px}
-.ek{background:var(--ok-bg);color:var(--ok)}.ew{background:var(--warn-bg);color:var(--warn)}.ed{background:var(--danger-bg);color:var(--danger)}
+.tbl tr:hover td{background:var(--bl)}
+.spr{display:flex;align-items:center;gap:7px}
+.sbar{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.sbf{height:100%;background:var(--acc);border-radius:3px}
+.sfr{font-size:12px;color:var(--tx2);white-space:nowrap}
+.eb{font-size:11px;padding:2px 7px;border-radius:20px}
+.ek{background:var(--okb);color:var(--ok)}.ew{background:var(--wnb);color:var(--wn)}.ed{background:var(--dgb);color:var(--dg)}
 
-/* WEEK */
-.wn{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.wnb{background:var(--card);border:1px solid var(--border);width:32px;height:32px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2);transition:background .15s}
-.wnb:hover{background:var(--brand-light)}
+.wn2{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.wnb{background:var(--wh);border:1px solid var(--bdr);width:30px;height:30px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--tx2);transition:background .15s}
+.wnb:hover{background:var(--bl)}
 .wr{font-size:14px;font-weight:600}
-.wg{background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
-.wgh{display:grid;grid-template-columns:56px repeat(6,1fr);background:var(--brand);color:#fff}
-.wgh>div{padding:10px 6px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.3px}
-.wgb{display:grid;grid-template-columns:56px repeat(6,1fr)}
-.wzl{grid-column:1/-1;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:5px 12px;color:var(--text3)}
-.wzl.sz{background:var(--sess-bg);color:var(--sess-text)}
-.wzl.bz{background:var(--bg);color:var(--text3)}
-.wzl.pz{background:#FAEEDA;color:#633806}
-.wtl{padding:8px 6px;font-size:10px;color:var(--text3);text-align:right;border-right:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end}
-.ws{min-height:60px;padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer}
-.ws:last-child{border-right:none}
-.ws:hover{background:var(--brand-light)}
-.bl{height:100%;min-height:52px;border-radius:6px;padding:5px 7px;font-size:11px}
-.bl.session{background:var(--sess-bg);color:var(--sess-text)}
-.bl.consultation{background:#E6F1FB;color:#0C447C}
-.bl.content{background:#FAEEDA;color:#633806}
-.bl.admin{background:#F1EFE8;color:#444}
-.bl.corporate{background:#EAF3DE;color:#27500A}
-.bl.break{background:#F5F5F3;color:#888}
-.bl.empty{background:none;border:1.5px dashed var(--border);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.35}
-.bln{font-weight:600;line-height:1.3}
-.blp{font-size:10px;opacity:.75;margin-top:1px}
+.wg{background:var(--wh);border-radius:var(--r);border:1px solid var(--bdr);overflow:hidden}
+.wgh{display:grid;grid-template-columns:52px repeat(6,1fr);background:var(--brand);color:#fff}
+.wgh>div{padding:9px 5px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.3px}
+.wgb{display:grid;grid-template-columns:52px repeat(6,1fr)}
+.wzl{grid-column:1/-1;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:5px 11px;color:var(--tx3)}
+.wzl.sz{background:var(--sb);color:var(--st)}.wzl.bz{background:var(--bg);color:var(--tx3)}.wzl.pz{background:#FAEEDA;color:#633806}
+.wtl{padding:6px;font-size:10px;color:var(--tx3);text-align:right;border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:flex-end}
+.ws{min-height:58px;padding:3px;border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .1s}
+.ws:last-child{border-right:none}.ws:hover{background:var(--bl)}
+.bl2{height:100%;min-height:50px;border-radius:5px;padding:5px 6px;font-size:11px}
+.bl2.session{background:var(--sb);color:var(--st)}.bl2.consultation{background:#E6F1FB;color:#0C447C}
+.bl2.content{background:#FAEEDA;color:#633806}.bl2.admin{background:#F1EFE8;color:#444}
+.bl2.corporate{background:#EAF3DE;color:#27500A}.bl2.break{background:#F5F5F3;color:#888}
+.bl2.empty{background:none;border:1.5px dashed var(--bdr);color:var(--tx3);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.3}
+.bln{font-weight:600;line-height:1.3}.blp{font-size:10px;opacity:.75;margin-top:1px}
+.cal-ev{font-size:10px;background:#E8F5E9;color:#2E7D32;border-radius:3px;padding:2px 5px;margin-top:3px;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-ev-dot{width:5px;height:5px;border-radius:50%;background:#4caf50;flex-shrink:0}
 
-/* MODAL */
+/* SETUP VIEW */
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.setup-card{background:var(--wh);border:1px solid var(--bdr);border-radius:var(--r);padding:20px}
+.setup-title{font-size:15px;font-weight:600;color:var(--brand);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.setup-sub{font-size:12px;color:var(--tx2);margin-bottom:16px;line-height:1.6}
+.setup-status{display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 12px;border-radius:var(--rs);margin-bottom:14px}
+.setup-status.ok{background:var(--okb);color:var(--ok)}
+.setup-status.err{background:var(--dgb);color:var(--dg)}
+.setup-status.warn{background:var(--wnb);color:var(--wn)}
+.steps{counter-reset:step}
+.step{counter-increment:step;display:flex;gap:10px;margin-bottom:12px;font-size:12px;color:var(--tx2);line-height:1.6}
+.step::before{content:counter(step);width:20px;height:20px;border-radius:50%;background:var(--bl);color:var(--brand);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step a{color:var(--brand)}
+.step code{background:var(--bg);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;color:var(--brand)}
+.fi2{width:100%;padding:8px 10px;border-radius:var(--rs);border:1.5px solid var(--bdr);font-size:12px;background:var(--bg);color:var(--tx);transition:border-color .15s;font-family:inherit;margin-bottom:6px}
+.fi2:focus{outline:none;border-color:var(--acc)}
+
 .mb{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
 .mb.open{display:flex}
-.mo{background:#fff;border-radius:var(--r);padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
-.mt{font-size:16px;font-weight:600;margin-bottom:20px;color:var(--brand)}
-.fg{margin-bottom:14px}
-.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
-.fi{width:100%;padding:9px 12px;border-radius:var(--rs);border:1.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--text);transition:border-color .15s;font-family:inherit}
-.fi:focus{outline:none;border-color:var(--brand-accent)}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ma{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-.cli{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;color:var(--text2);cursor:pointer}
+.mo{background:#fff;border-radius:var(--r);padding:22px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.mt2{font-size:15px;font-weight:600;margin-bottom:18px;color:var(--brand)}
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.fi{width:100%;padding:8px 11px;border-radius:var(--rs);border:1.5px solid var(--bdr);font-size:13px;background:var(--bg);color:var(--tx);transition:border-color .15s;font-family:inherit}
+.fi:focus{outline:none;border-color:var(--acc)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ma{display:flex;justify-content:flex-end;gap:7px;margin-top:16px}
+.cli{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:12px;color:var(--tx2);cursor:pointer}
 .cli.done{color:var(--ok)}
-.cdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cdot{width:15px;height:15px;border-radius:50%;border:2px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .cli.done .cdot{background:var(--ok);border-color:var(--ok);color:#fff;font-size:9px;font-weight:700}
-
-/* GTASKS */
-.gtc{text-align:center;padding:40px 30px;border:2px dashed var(--border);border-radius:var(--r)}
-.gth{font-size:16px;font-weight:600;margin-bottom:8px}
-.gts{font-size:13px;color:var(--text2);margin-bottom:20px}
-.setup-box{background:var(--bg);border-radius:var(--rs);padding:14px 16px;font-size:12px;color:var(--text2);text-align:left;margin-bottom:18px;line-height:1.8}
-
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--brand);color:#fff;padding:12px 18px;border-radius:var(--rs);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s}
+.gtc{text-align:center;padding:36px 28px;border:2px dashed var(--bdr);border-radius:var(--r)}
+.es{text-align:center;padding:28px;color:var(--tx3);font-size:13px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--brand);color:#fff;padding:11px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s}
 .toast.show{transform:translateY(0);opacity:1}
-
-/* EMPTY */
-.es{text-align:center;padding:30px;color:var(--text3);font-size:13px}
 </style>
 </head>
 <body>
 
-<nav class="sb">
-  <div class="sb-logo"><div class="ln">Ritu Hirani</div><div class="ls">Life Coach · Ops Dashboard</div></div>
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="ln">Ritu Hirani</div>
+    <div class="ls">Life Coach · Ops Dashboard</div>
+  </div>
   <div class="nav-sec">
     <div class="nl">Views</div>
     <div class="ni active" data-view="today" onclick="go('today',this)">
@@ -207,30 +202,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="ni" data-view="gtasks" onclick="go('gtasks',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Google Tasks
     </div>
+    <div class="ni" data-view="setup" onclick="go('setup',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Setup
+    </div>
   </div>
   <div class="sb-foot">
-    <div class="sync-st"><span class="sync-dot" id="sdot"></span><span id="stext">Not synced</span></div>
-    <button class="sync-btn" onclick="doSync()">↻ Sync Google Tasks</button>
+    <div class="sync-row">
+      <div class="sdot" id="fbDot"></div>
+      <span id="fbText">Firebase</span>
+      <span id="liveBadge" style="display:none" class="live-badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <div class="sync-row" style="margin-bottom:8px">
+      <div class="sdot" id="gDot"></div>
+      <span id="gText">Google</span>
+    </div>
+    <button class="sync-btn" onclick="doSync()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Sync Google Tasks &amp; Calendar
+    </button>
   </div>
 </nav>
 
 <main class="main">
   <div class="topbar">
-    <div class="topbar-info">
-      <div class="topbar-title" id="vtitle">Today</div>
-      <div class="topbar-date" id="vdate"></div>
+    <div class="tb-info">
+      <div class="tb-title" id="vtitle">Today</div>
+      <div class="tb-date" id="vdate"></div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-o" onclick="om('mTask')">+ Add Task</button>
-      <button class="btn btn-p" onclick="om('mClient')">+ Add Client</button>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-o" onclick="om('mTask')">+ Task</button>
+      <button class="btn btn-p" onclick="om('mClient')">+ Client</button>
     </div>
   </div>
 
   <div class="content">
 
-    <!-- TODAY -->
     <div class="view active" id="view-today">
-      <div class="g4" id="stats" style="margin-bottom:16px"></div>
+      <div class="g4" id="stats" style="margin-bottom:14px"></div>
       <div class="g2">
         <div>
           <div class="card">
@@ -238,7 +246,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div id="tlist"></div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card">
             <div class="ch"><span class="ct">Today's Sessions</span></div>
             <div id="tsess"></div>
@@ -251,26 +259,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
 
-    <!-- WEEK -->
     <div class="view" id="view-week">
-      <div class="wn">
+      <div class="wn2">
         <button class="wnb" onclick="cw(-1)">‹</button>
         <div class="wr" id="wrange"></div>
         <button class="wnb" onclick="cw(1)">›</button>
-        <button class="btn btn-o" style="font-size:12px;padding:5px 12px;margin-left:6px" onclick="cw(0,true)">Today</button>
+        <button class="btn btn-o btn-sm" style="margin-left:5px" onclick="cw(0,true)">Today</button>
       </div>
       <div class="wg" id="wgrid"></div>
-      <div style="margin-top:16px">
+      <div style="margin-top:14px">
         <div class="card"><div class="ch"><span class="ct">Tasks This Week</span></div><div id="wtasks"></div></div>
       </div>
     </div>
 
-    <!-- CLIENTS -->
     <div class="view" id="view-clients">
       <div class="pipe" id="pipe"></div>
     </div>
 
-    <!-- SESSIONS -->
     <div class="view" id="view-sessions">
       <div class="card">
         <div class="ch"><span class="ct">Session Tracker</span></div>
@@ -279,9 +284,65 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
 
-    <!-- GOOGLE TASKS -->
     <div class="view" id="view-gtasks">
       <div class="card" id="gtbody"></div>
+    </div>
+
+    <!-- SETUP VIEW -->
+    <div class="view" id="view-setup">
+      <div class="setup-grid">
+
+        <!-- Firebase Card -->
+        <div class="setup-card">
+          <div class="setup-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Firebase Realtime Sync
+          </div>
+          <div class="setup-sub">Syncs clients, tasks and schedule between you and Ritu in real time across all devices.</div>
+          <div class="setup-status" id="fbStatus"></div>
+          <div class="steps">
+            <div class="step">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Create project → name it <code>ritu-ops</code></div>
+            <div class="step">Build → Realtime Database → Create database → Start in <strong>test mode</strong></div>
+            <div class="step">Project Settings (gear icon) → Your apps → Add web app → Register → copy the config</div>
+            <div class="step">Paste each config value below and click Save</div>
+          </div>
+          <div style="margin-top:12px">
+            <label class="fl">API Key</label><input class="fi2" id="fb_apiKey" placeholder="AIzaSy..."/>
+            <label class="fl">Auth Domain</label><input class="fi2" id="fb_authDomain" placeholder="ritu-ops.firebaseapp.com"/>
+            <label class="fl">Database URL</label><input class="fi2" id="fb_dbUrl" placeholder="https://ritu-ops-default-rtdb.firebaseio.com"/>
+            <label class="fl">Project ID</label><input class="fi2" id="fb_projectId" placeholder="ritu-ops"/>
+            <button class="btn btn-p btn-sm" onclick="saveFirebaseConfig()" style="margin-top:4px">Save &amp; Connect</button>
+          </div>
+        </div>
+
+        <!-- Google Card -->
+        <div class="setup-card">
+          <div class="setup-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Google Tasks &amp; Calendar
+          </div>
+          <div class="setup-sub">Pulls your Google Tasks and syncs session slots with Google Calendar automatically.</div>
+          <div class="setup-status" id="gStatus"></div>
+          <div class="steps">
+            <div class="step">Google Cloud Console → your project → Enable <strong>Google Calendar API</strong> (Tasks API should already be enabled)</div>
+            <div class="step">OAuth consent screen → Test users → add <code>chiragds0117@gmail.com</code> and Ritu's Gmail</div>
+            <div class="step">Credentials → your OAuth Client ID → Authorised origins: <code>https://chiraghontec.github.io</code></div>
+            <div class="step">Enter your Client ID below and click Connect</div>
+          </div>
+          <div style="margin-top:12px">
+            <label class="fl">Google OAuth Client ID</label>
+            <input class="fi2" id="gcid" placeholder="xxxxxx.apps.googleusercontent.com"/>
+            <button class="btn btn-p btn-sm" onclick="gConnect()" style="margin-top:4px">Connect Google</button>
+            <button class="btn btn-o btn-sm" onclick="gDisc()" style="margin-top:4px;margin-left:6px">Disconnect</button>
+          </div>
+        </div>
+
+      </div>
+      <!-- Status summary -->
+      <div class="card" style="margin-top:14px">
+        <div class="ch"><span class="ct">Connection Status</span></div>
+        <div id="connSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+      </div>
     </div>
 
   </div>
@@ -290,7 +351,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- ADD TASK MODAL -->
 <div class="mb" id="mTask">
   <div class="mo">
-    <div class="mt">Add Task</div>
+    <div class="mt2">Add Task</div>
     <div class="fg"><label class="fl">Title *</label><input class="fi" id="tTitle" placeholder="e.g. Send onboarding form to Priya"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="tDate"/></div>
@@ -299,11 +360,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fr">
       <div class="fg"><label class="fl">Category</label>
         <select class="fi" id="tCat">
-          <option value="admin">Admin / Ops</option>
-          <option value="session">Session</option>
-          <option value="enrollment">Enrollment</option>
-          <option value="content">Content</option>
-          <option value="followup">Follow-up</option>
+          <option value="admin">Admin / Ops</option><option value="session">Session</option>
+          <option value="enrollment">Enrollment</option><option value="content">Content</option><option value="followup">Follow-up</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Client</label><select class="fi" id="tCli"><option value="">— None —</option></select></div>
@@ -318,7 +376,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- ADD CLIENT MODAL -->
 <div class="mb" id="mClient">
   <div class="mo">
-    <div class="mt">Add Client</div>
+    <div class="mt2">Add Client</div>
     <div class="fr">
       <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="cName" placeholder="Full name"/></div>
       <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cPhone" placeholder="+91 ..."/></div>
@@ -338,19 +396,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="fg"><label class="fl">Stage</label>
         <select class="fi" id="cStage">
-          <option value="lead">Lead</option>
-          <option value="consultation">Consultation</option>
-          <option value="enrolled">Enrolled</option>
-          <option value="active">Active</option>
+          <option value="lead">Lead</option><option value="consultation">Consultation</option>
+          <option value="enrolled">Enrolled</option><option value="active">Active</option>
         </select>
       </div>
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Payment</label>
         <select class="fi" id="cPay">
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="part-paid">Part-paid</option>
+          <option value="pending">Pending</option><option value="paid">Paid</option><option value="part-paid">Part-paid</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Start Date</label><input class="fi" type="date" id="cStart"/></div>
@@ -367,7 +421,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="mo" style="width:520px">
     <div id="detContent"></div>
     <div class="ma">
-      <button class="btn btn-o" style="color:var(--danger);border-color:var(--danger)" onclick="deleteClient()">Delete</button>
+      <button class="btn btn-o" style="color:var(--dg);border-color:var(--dg)" onclick="deleteClient()">Delete</button>
       <button class="btn btn-o" onclick="cm('mDetail')">Close</button>
       <button class="btn btn-p" onclick="cm('mDetail');renderClients();toast('Saved')">Save</button>
     </div>
@@ -377,45 +431,117 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="toast" id="toastEl"></div>
 
 <script>
-const PKG_S={
-  'Starter Package':6,'Growth Package':12,'Transformation Package':20,
-  'Relationship Coaching':12,'Personality Development':8,'Impact Session':1
-};
-const PKG_M={
-  'Starter Package':2,'Growth Package':3,'Transformation Package':6,
-  'Relationship Coaching':3,'Personality Development':2,'Impact Session':0
-};
+// ══════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════
+const PKG_S={'Starter Package':6,'Growth Package':12,'Transformation Package':20,'Relationship Coaching':12,'Personality Development':8,'Impact Session':1};
+const PKG_M={'Starter Package':2,'Growth Package':3,'Transformation Package':6,'Relationship Coaching':3,'Personality Development':2,'Impact Session':0};
 const STAGES=['lead','consultation','enrolled','active','offboarded'];
 const SLABELS={lead:'Lead',consultation:'Consultation',enrolled:'Enrolled',active:'Active',offboarded:'Offboarded'};
 const ESTEPS=['Package selected','Registration form filled','Payment received','Confirmation sent','E-contract signed','Session 1 scheduled','Client ready'];
 const DAYS_K=['tue','wed','thu','fri','sat','sun'];
 const DAYS_L=['Tue','Wed','Thu','Fri','Sat','Sun'];
-const VTITLES={today:'Today',week:'This Week',clients:'Clients',sessions:'Sessions',gtasks:'Google Tasks'};
+const VTITLES={today:'Today',week:'This Week',clients:'Clients',sessions:'Sessions',gtasks:'Google Tasks',setup:'Setup'};
+const ZONE_TIMES={prep:{h:14,m:0,eh:15,em:0},block1:{h:15,m:0,eh:17,em:0},break:{h:17,m:0,eh:18,em:0},block2:{h:18,m:0,eh:20,em:0}};
 
-function ls(){const s=localStorage.getItem('rh_ops');return s?JSON.parse(s):{clients:[],tasks:[],schedule:{},gtoken:null,gsync:null,woff:0}}
-function ss(){localStorage.setItem('rh_ops',JSON.stringify(S))}
-let S=ls();
-let curCli=null;
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+function defaultState(){return{clients:[],tasks:[],schedule:{},gtoken:null,gsync:null,woff:0};}
+function loadLocal(){const s=localStorage.getItem('rh_ops');return s?JSON.parse(s):defaultState();}
+function saveLocal(){localStorage.setItem('rh_ops',JSON.stringify(S));}
+let S=loadLocal();
+let db=null, fbReady=false, calEvents={}, curCli=null;
 
+// ══════════════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════════════
+function saveFirebaseConfig(){
+  const cfg={
+    apiKey:document.getElementById('fb_apiKey').value.trim(),
+    authDomain:document.getElementById('fb_authDomain').value.trim(),
+    databaseURL:document.getElementById('fb_dbUrl').value.trim(),
+    projectId:document.getElementById('fb_projectId').value.trim(),
+  };
+  if(!cfg.apiKey||!cfg.databaseURL){toast('Fill in API Key and Database URL');return;}
+  Object.entries(cfg).forEach(([k,v])=>localStorage.setItem('rh_fb_'+k,v));
+  initFirebase(cfg);
+}
+
+function loadFirebaseConfig(){
+  const k=['apiKey','authDomain','databaseURL','projectId'];
+  const cfg={};
+  k.forEach(key=>{const v=localStorage.getItem('rh_fb_'+key);if(v)cfg[key]=v;});
+  if(cfg.apiKey&&cfg.databaseURL)initFirebase(cfg);
+}
+
+function initFirebase(cfg){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(cfg);
+    else firebase.app();
+    db=firebase.database();
+    fbReady=true;
+    setupFbListeners();
+    setDot('fbDot','ok');
+    document.getElementById('fbText').textContent='Firebase · Live';
+    document.getElementById('liveBadge').style.display='inline-flex';
+    updateSetupStatus();
+    toast('Firebase connected — live sync active');
+  }catch(e){
+    fbReady=false;
+    setDot('fbDot','err');
+    document.getElementById('fbText').textContent='Firebase · Error';
+    console.error('Firebase init error:',e);
+    toast('Firebase error: '+e.message);
+  }
+}
+
+function setupFbListeners(){
+  if(!db)return;
+  db.ref('clients').on('value',snap=>{
+    const d=snap.val();
+    if(d){S.clients=Object.values(d);saveLocal();renderCurrent();}
+  });
+  db.ref('tasks').on('value',snap=>{
+    const d=snap.val();
+    if(d){S.tasks=Object.values(d);saveLocal();renderCurrent();}
+  });
+  db.ref('schedule').on('value',snap=>{
+    const d=snap.val();
+    if(d){S.schedule=d;saveLocal();renderCurrent();}
+  });
+}
+
+function ss(){
+  saveLocal();
+  if(!fbReady||!db)return;
+  const co={},to={};
+  S.clients.forEach(c=>co[c.id]=c);
+  S.tasks.forEach(t=>to[t.id]=t);
+  db.ref('clients').set(co).catch(e=>console.error('FB write clients:',e));
+  db.ref('tasks').set(to).catch(e=>console.error('FB write tasks:',e));
+  db.ref('schedule').set(S.schedule).catch(e=>console.error('FB write schedule:',e));
+}
+
+// ══════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 function tod(){return new Date().toISOString().split('T')[0]}
 function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
 function fmtDT(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 function dUntil(d){if(!d)return null;const a=new Date(d+'T00:00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
 function inits(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
-function toast(m,d=2500){const t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d)}
+function setDot(id,state){const d=document.getElementById(id);if(!d)return;d.classList.remove('ok','warn','err');if(state)d.classList.add(state);}
+function toast(m,d=2800){const t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);}
+function renderCurrent(){const v=document.querySelector('.ni.active');if(v)render(v.dataset.view);}
 
-function wkStart(off=0){
-  const n=new Date(),day=n.getDay(),diff=day===0?-6:1-day,m=new Date(n);
-  m.setDate(n.getDate()+diff+(off*7));m.setHours(0,0,0,0);return m;
-}
-function wkDays(off=0){
-  const m=wkStart(off),days=[];
-  for(let i=1;i<=6;i++){const d=new Date(m);d.setDate(m.getDate()+i);days.push(d);}
-  return days;
-}
+function wkStart(off=0){const n=new Date(),day=n.getDay(),diff=day===0?-6:1-day,m=new Date(n);m.setDate(n.getDate()+diff+(off*7));m.setHours(0,0,0,0);return m;}
+function wkDays(off=0){const m=wkStart(off),days=[];for(let i=1;i<=6;i++){const d=new Date(m);d.setDate(m.getDate()+i);days.push(d);}return days;}
 
-// NAV
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
 function go(v,el){
   document.querySelectorAll('.ni').forEach(i=>i.classList.remove('active'));
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -430,15 +556,17 @@ function render(v){
   else if(v==='clients')renderClients();
   else if(v==='sessions')rSessions();
   else if(v==='gtasks')rGTasks();
+  else if(v==='setup')rSetup();
 }
 
-// INIT TOPBAR
 (function(){
   const n=new Date(),h=n.getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   document.getElementById('vdate').textContent=g+', Chirag · '+n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 })();
 
-// TODAY
+// ══════════════════════════════════════════════════════════
+// TODAY VIEW
+// ══════════════════════════════════════════════════════════
 function rToday(){
   const td=tod();
   const ac=S.clients.filter(c=>c.stage==='active').length;
@@ -448,7 +576,7 @@ function rToday(){
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="sl">Active Clients</div><div class="sv">${ac}</div><div class="ss">Currently coaching</div></div>
     <div class="stat"><div class="sl">Tasks Today</div><div class="sv">${tc}</div><div class="ss">Due today</div></div>
-    <div class="stat"><div class="sl">Pending Payments</div><div class="sv" style="color:${pp>0?'var(--warn)':'var(--ok)'}">${pp}</div><div class="ss">Awaiting payment</div></div>
+    <div class="stat"><div class="sl">Pending Payments</div><div class="sv" style="color:${pp>0?'var(--wn)':'var(--ok)'}">${pp}</div><div class="ss">Awaiting payment</div></div>
     <div class="stat"><div class="sl">Sessions This Week</div><div class="sv">${ws}</div><div class="ss">Scheduled</div></div>`;
 
   const ttasks=S.tasks.filter(t=>t.dueDate===td||(!t.dueDate&&!t.completed));
@@ -462,11 +590,11 @@ function rToday(){
   document.getElementById('tsess').innerHTML=`
     <div class="sb2 ${s1?s1.type||'session':'empty'}">
       <div class="sbt">3:00–5:00 PM · Block 1</div>
-      ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--text3)">No session scheduled</div>`}
+      ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
     </div>
     <div class="sb2 ${s2?s2.type||'session':'empty'}">
       <div class="sbt">6:00–8:00 PM · Block 2</div>
-      ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--text3)">No session scheduled</div>`}
+      ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
     </div>`;
 
   const acts=[];
@@ -480,20 +608,22 @@ function rToday(){
       if(exp!==null&&exp<=14&&rem>0)acts.push({t:`${rem} sessions left · expires in ${exp}d — ${c.name}`,u:exp<=7});
     }
   });
-  const pa=document.getElementById('pact');
-  pa.innerHTML=acts.length?acts.map(a=>`<div class="ai"><div class="ad ${a.u?'u':''}"></div><span>${a.t}</span></div>`).join(''):`<div class="es">No pending actions</div>`;
+  document.getElementById('pact').innerHTML=acts.length
+    ?acts.map(a=>`<div class="ai"><div class="ad ${a.u?'u':''}"></div><span>${a.t}</span></div>`).join('')
+    :`<div class="es">No pending actions</div>`;
 }
 
 function tHTML(t){
   const cat={session:'tg-s',admin:'tg-a',enrollment:'tg-e',content:'tg-c',followup:'tg-f'};
   return`<div class="ti" id="ti-${t.id}">
     <div class="tck ${t.completed?'done':''}" onclick="tog('${t.id}')"></div>
-    <div class="tb">
+    <div class="tb2">
       <div class="tt ${t.completed?'done':''}">${t.title}</div>
       <div class="tm">
         ${t.category?`<span class="tag ${cat[t.category]||'tg-a'}">${t.category}</span>`:''}
-        ${t.dueTime?`<span style="font-size:11px;color:var(--text3)">${t.dueTime}</span>`:''}
+        ${t.dueTime?`<span style="font-size:11px;color:var(--tx3)">${t.dueTime}</span>`:''}
         ${t.source==='google'?'<span class="tag tg-g">Google</span>':''}
+        ${t.source==='calendar'?'<span class="tag tg-cal">Calendar</span>':''}
       </div>
     </div>
     <button class="tdel" onclick="delT('${t.id}')">×</button>
@@ -503,13 +633,25 @@ function tHTML(t){
 function tog(id){const t=S.tasks.find(x=>x.id===id);if(t){t.completed=!t.completed;ss();render(document.querySelector('.ni.active').dataset.view)}}
 function delT(id){S.tasks=S.tasks.filter(t=>t.id!==id);ss();render(document.querySelector('.ni.active').dataset.view);toast('Removed')}
 
-// WEEK
-function cw(d,reset){if(reset)S.woff=0;else S.woff+=d;ss();rWeek()}
-function rWeek(){
+// ══════════════════════════════════════════════════════════
+// WEEK VIEW
+// ══════════════════════════════════════════════════════════
+function cw(d,reset){if(reset)S.woff=0;else S.woff+=d;saveLocal();rWeek();}
+
+async function rWeek(){
   const days=wkDays(S.woff);
   const fmt=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
   document.getElementById('wrange').textContent=`${fmt(days[0])} – ${fmt(days[5])} ${days[0].getFullYear()}`;
   const td=tod(),ds=days.map(d=>d.toISOString().split('T')[0]);
+
+  // Fetch calendar events for the week if Google is connected
+  if(S.gtoken){
+    try{
+      const start=days[0].toISOString();
+      const end=new Date(days[5]);end.setHours(23,59,59);
+      await fetchCalendarEvents(start,end.toISOString(),ds);
+    }catch(e){console.log('Calendar fetch skipped:',e.message);}
+  }
 
   const zones=[
     {k:'prep',l:'2:00–3:00 PM · Prep zone',c:'pz'},
@@ -518,16 +660,27 @@ function rWeek(){
     {k:'block2',l:'6:00–8:00 PM · Session block 2  [ANCHORED]',c:'sz'},
   ];
 
-  let h=`<div class="wgh"><div></div>${days.map((d,i)=>`<div style="${ds[i]===td?'background:rgba(255,255,255,.2)':''}">${DAYS_L[i]}<br><span style="font-size:9px;opacity:.6">${d.getDate()}</span></div>`).join('')}</div><div class="wgb">`;
+  let h=`<div class="wgh"><div></div>${days.map((d,i)=>`<div style="${ds[i]===td?'background:rgba(255,255,255,.18)':''}">${DAYS_L[i]}<br><span style="font-size:9px;opacity:.6">${d.getDate()}</span></div>`).join('')}</div><div class="wgb">`;
+
   zones.forEach(z=>{
-    h+=`<div class="wzl ${z.c}" style="border-bottom:1px solid var(--border)">${z.l}</div><div class="wtl" style="font-size:9px"></div>`;
+    h+=`<div class="wzl ${z.c}" style="border-bottom:1px solid var(--bdr)">${z.l}</div>`;
+    h+=`<div class="wtl"></div>`;
     DAYS_K.forEach((dk,di)=>{
       const sl=(S.schedule[dk]||{})[z.k];
       const isTd=ds[di]===td;
-      h+=`<div class="ws" style="${isTd?'background:var(--brand-light)':''}" onclick="editSlot('${dk}','${z.k}')">`;
-      if(sl&&sl.label){h+=`<div class="bl ${sl.type||'session'}"><div class="bln">${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}</div>`;}
-      else if(z.k==='block1'||z.k==='block2'){h+=`<div class="bl empty" style="border:1.5px dashed #7F77DD">+</div>`;}
-      else{h+=`<div class="bl empty">+</div>`;}
+      const calEvts=(calEvents[ds[di]]||[]).filter(e=>evtMatchesZone(e,z.k));
+      h+=`<div class="ws" style="${isTd?'background:var(--bl)':''}" onclick="editSlot('${dk}','${z.k}','${ds[di]}')">`;
+      if(sl&&sl.label){
+        h+=`<div class="bl2 ${sl.type||'session'}"><div class="bln">${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}</div>`;
+      }else if(z.k==='block1'||z.k==='block2'){
+        h+=`<div class="bl2 session" style="opacity:.25;border:1.5px dashed #7F77DD;background:transparent"><div class="bln" style="color:#7F77DD">+ Session</div></div>`;
+      }else{
+        h+=`<div class="bl2 empty">+</div>`;
+      }
+      // Show calendar events for this slot
+      calEvts.forEach(e=>{
+        h+=`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`;
+      });
       h+=`</div>`;
     });
   });
@@ -540,32 +693,115 @@ function rWeek(){
   if(!wt.length){wtel.innerHTML=`<div class="es">No tasks this week</div>`;return;}
   const grp={};wt.forEach(t=>{(grp[t.dueDate]=grp[t.dueDate]||[]).push(t)});
   wtel.innerHTML=Object.entries(grp).sort().map(([date,ts])=>`
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:600;color:var(--brand);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:6px">${fmtD(date)}${date===td?' <span style="background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;margin-left:4px">Today</span>':''}</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--brand);padding:3px 0;border-bottom:1px solid var(--bdr);margin-bottom:5px">${fmtD(date)}${date===tod()?` <span style="background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;margin-left:4px">Today</span>`:''}</div>
       ${ts.map(tHTML).join('')}
     </div>`).join('');
 }
 
+// ══════════════════════════════════════════════════════════
+// GOOGLE CALENDAR
+// ══════════════════════════════════════════════════════════
+function evtMatchesZone(evt,zoneKey){
+  if(!evt.start||!evt.start.dateTime)return false;
+  const start=new Date(evt.start.dateTime);
+  const h=start.getHours(),m=start.getMinutes();
+  const zt=ZONE_TIMES[zoneKey];
+  if(!zt)return false;
+  return h===zt.h&&m===zt.m;
+}
+
+async function fetchCalendarEvents(timeMin,timeMax,dateStrs){
+  if(!S.gtoken)return;
+  const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&maxResults=50`;
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+S.gtoken}});
+  if(!r.ok){
+    if(r.status===401){S.gtoken=null;saveLocal();}
+    return;
+  }
+  const d=await r.json();
+  calEvents={};
+  (d.items||[]).forEach(evt=>{
+    if(!evt.start)return;
+    const dateStr=(evt.start.dateTime||evt.start.date||'').split('T')[0];
+    if(!calEvents[dateStr])calEvents[dateStr]=[];
+    calEvents[dateStr].push(evt);
+  });
+}
+
+async function createCalendarEvent(slot,dateStr,zoneKey){
+  if(!S.gtoken||!slot||!slot.label)return null;
+  const zt=ZONE_TIMES[zoneKey];if(!zt)return null;
+  const startISO=`${dateStr}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00`;
+  const endISO=`${dateStr}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00`;
+  const event={
+    summary: slot.type==='session'?`Session · ${slot.label}`:`${slot.type?slot.type.charAt(0).toUpperCase()+slot.type.slice(1):''} · ${slot.label}`,
+    description: slot.pkg?`Package: ${slot.pkg}`:'',
+    start:{dateTime:startISO,timeZone:'Asia/Kolkata'},
+    end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
+    colorId: slot.type==='session'?'9':slot.type==='consultation'?'1':slot.type==='content'?'5':'7',
+  };
+  try{
+    const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+      method:'POST',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
+      body:JSON.stringify(event)
+    });
+    const d=await r.json();
+    return d.id||null;
+  }catch(e){console.error('Calendar create error:',e);return null;}
+}
+
+async function updateCalendarEvent(eventId,slot,dateStr,zoneKey){
+  if(!S.gtoken||!eventId)return;
+  const zt=ZONE_TIMES[zoneKey];if(!zt)return;
+  const startISO=`${dateStr}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00`;
+  const endISO=`${dateStr}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00`;
+  const event={
+    summary: slot.type==='session'?`Session · ${slot.label}`:`${slot.type||''} · ${slot.label}`,
+    description: slot.pkg||'',
+    start:{dateTime:startISO,timeZone:'Asia/Kolkata'},
+    end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
+  };
+  try{
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,{
+      method:'PUT',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
+      body:JSON.stringify(event)
+    });
+  }catch(e){console.error('Calendar update error:',e);}
+}
+
+async function deleteCalendarEvent(eventId){
+  if(!S.gtoken||!eventId)return;
+  try{
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,{
+      method:'DELETE',headers:{Authorization:'Bearer '+S.gtoken}
+    });
+  }catch(e){console.error('Calendar delete error:',e);}
+}
+
+// ══════════════════════════════════════════════════════════
 // SLOT EDIT
+// ══════════════════════════════════════════════════════════
 let eSlot=null;
-function editSlot(dk,zk){
-  eSlot={dk,zk};
+function editSlot(dk,zk,dateStr){
+  eSlot={dk,zk,dateStr};
   const sl=(S.schedule[dk]||{})[zk]||{};
   const cliOpts=S.clients.filter(c=>c.stage==='active').map(c=>`<option value="${c.id}" ${sl.cliId===c.id?'selected':''}>${c.name}</option>`).join('');
   const div=document.createElement('div');
   div.className='mb open';div.id='mSlot';
   div.innerHTML=`<div class="mo">
-    <div class="mt">Edit Slot · ${dk} · ${zk}</div>
+    <div class="mt2">Edit Slot · ${DAYS_L[DAYS_K.indexOf(dk)]} · ${zk}</div>
     <div class="fg"><label class="fl">Block Type</label>
       <select class="fi" id="slType">
         ${['session','consultation','content','admin','corporate','break'].map(t=>`<option value="${t}" ${sl.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
         <option value="empty" ${!sl.label?'selected':''}>— Clear —</option>
       </select></div>
-    <div class="fg"><label class="fl">Label</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
-    <div class="fg"><label class="fl">Client</label><select class="fi" id="slCli"><option value="">— None —</option>${cliOpts}</select></div>
+    <div class="fg"><label class="fl">Label / Client Name</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
+    <div class="fg"><label class="fl">Client (active clients)</label><select class="fi" id="slCli"><option value="">— None —</option>${cliOpts}</select></div>
     <div class="fg"><label class="fl">Package / Notes</label><input class="fi" id="slPkg" value="${sl.pkg||''}"/></div>
+    ${S.gtoken?`<div style="font-size:11px;color:var(--ok);margin-bottom:8px">✓ Will sync to Google Calendar automatically</div>`:'<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Connect Google to sync with Calendar</div>'}
     <div class="ma">
-      <button class="btn btn-o" style="color:var(--danger);border-color:var(--danger)" onclick="clearSlot()">Clear</button>
+      <button class="btn btn-o" style="color:var(--dg);border-color:var(--dg)" onclick="clearSlot()">Clear</button>
       <button class="btn btn-o" onclick="document.getElementById('mSlot').remove()">Cancel</button>
       <button class="btn btn-p" onclick="saveSlot()">Save</button>
     </div>
@@ -574,46 +810,68 @@ function editSlot(dk,zk){
   div.addEventListener('click',e=>{if(e.target===div)div.remove()});
 }
 
-function clearSlot(){
+async function clearSlot(){
   if(!eSlot)return;
-  if(!S.schedule[eSlot.dk])S.schedule[eSlot.dk]={};
-  delete S.schedule[eSlot.dk][eSlot.zk];
-  ss();document.getElementById('mSlot').remove();rWeek();
+  const{dk,zk}=eSlot;
+  const existing=(S.schedule[dk]||{})[zk];
+  if(existing&&existing.calEventId)await deleteCalendarEvent(existing.calEventId);
+  if(!S.schedule[dk])S.schedule[dk]={};
+  delete S.schedule[dk][zk];
+  ss();document.getElementById('mSlot').remove();rWeek();toast('Slot cleared');
 }
-function saveSlot(){
+
+async function saveSlot(){
   if(!eSlot)return;
-  const t=document.getElementById('slType').value;
+  const{dk,zk,dateStr}=eSlot;
+  const type=document.getElementById('slType').value;
   const l=document.getElementById('slLabel').value.trim();
   const cid=document.getElementById('slCli').value;
   const p=document.getElementById('slPkg').value.trim();
-  if(!S.schedule[eSlot.dk])S.schedule[eSlot.dk]={};
-  if(t==='empty'&&!l){delete S.schedule[eSlot.dk][eSlot.zk];}
-  else{
+  if(!S.schedule[dk])S.schedule[dk]={};
+  if(type==='empty'&&!l){
+    const ex=(S.schedule[dk]||{})[zk];
+    if(ex&&ex.calEventId)await deleteCalendarEvent(ex.calEventId);
+    delete S.schedule[dk][zk];
+  }else{
     const cli=cid?S.clients.find(c=>c.id===cid):null;
-    S.schedule[eSlot.dk][eSlot.zk]={type:t,label:l||(cli?cli.name:t),cliId:cid||null,pkg:p||(cli?cli.package:'')};
+    const existing=(S.schedule[dk]||{})[zk]||{};
+    const newSlot={type,label:l||(cli?cli.name:type),cliId:cid||null,pkg:p||(cli?cli.package:''),calEventId:existing.calEventId||null};
+    // Calendar sync
+    if(S.gtoken&&dateStr){
+      if(newSlot.calEventId){
+        await updateCalendarEvent(newSlot.calEventId,newSlot,dateStr,zk);
+      }else{
+        const evId=await createCalendarEvent(newSlot,dateStr,zk);
+        if(evId)newSlot.calEventId=evId;
+      }
+    }
+    S.schedule[dk][zk]=newSlot;
   }
-  ss();document.getElementById('mSlot').remove();rWeek();toast('Slot saved');
+  ss();document.getElementById('mSlot').remove();rWeek();
+  toast(S.gtoken?'Slot saved + Calendar event created':'Slot saved');
 }
 
-// CLIENTS
+// ══════════════════════════════════════════════════════════
+// CLIENTS VIEW
+// ══════════════════════════════════════════════════════════
 function renderClients(){
   let h='';
   STAGES.forEach(st=>{
     const clis=S.clients.filter(c=>c.stage===st);
     h+=`<div><div class="ph">${SLABELS[st]}<span class="pc">${clis.length}</span></div>`;
-    if(!clis.length)h+=`<div style="border:1.5px dashed var(--border);border-radius:var(--rs);padding:14px;text-align:center;font-size:12px;color:var(--text3)">Empty</div>`;
+    if(!clis.length)h+=`<div style="border:1.5px dashed var(--bdr);border-radius:var(--rs);padding:13px;text-align:center;font-size:12px;color:var(--tx3)">Empty</div>`;
     clis.forEach(c=>{
       const done=Object.values(c.enrollmentChecklist||{}).filter(Boolean).length;
       const pct=Math.round((done/ESTEPS.length)*100);
       const pb=c.paymentStatus==='paid'?'b-paid':c.paymentStatus==='part-paid'?'b-part':'b-pend';
       h+=`<div class="cc2" onclick="openDet('${c.id}')">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
           <div class="av">${inits(c.name)}</div>
           <div><div class="cn">${c.name}</div><div class="cpk">${c.package||'No package'}</div></div>
         </div>
         <span class="badge ${pb}">${c.paymentStatus||'pending'}</span>
-        ${st!=='lead'?`<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>Enrollment</span><span>${done}/${ESTEPS.length}</span></div><div class="pbar"><div class="pfill" style="width:${pct}%"></div></div></div>`:''}
-        ${st==='active'&&c.totalSessions?`<div style="margin-top:5px;font-size:11px;color:var(--text3)">${c.completedSessions||0}/${c.totalSessions} sessions</div>`:''}
+        ${st!=='lead'?`<div style="margin-top:7px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-bottom:2px"><span>Enrollment</span><span>${done}/${ESTEPS.length}</span></div><div class="pbar"><div class="pfill" style="width:${pct}%"></div></div></div>`:''}
+        ${st==='active'&&c.totalSessions?`<div style="margin-top:4px;font-size:11px;color:var(--tx3)">${c.completedSessions||0}/${c.totalSessions} sessions</div>`:''}
       </div>`;
     });
     h+=`</div>`;
@@ -626,8 +884,8 @@ function openDet(id){
   const c=S.clients.find(x=>x.id===id);if(!c)return;
   const ec=c.enrollmentChecklist||{};
   document.getElementById('detContent').innerHTML=`
-    <div class="mt">${c.name}</div>
-    <div class="fr" style="margin-bottom:14px">
+    <div class="mt2">${c.name}</div>
+    <div class="fr" style="margin-bottom:12px">
       <div class="fg"><label class="fl">Package</label><select class="fi" onchange="upd('${id}','package',this.value)">
         ${Object.keys(PKG_S).map(p=>`<option value="${p}" ${c.package===p?'selected':''}>${p}</option>`).join('')}
       </select></div>
@@ -643,39 +901,21 @@ function openDet(id){
       <div class="fg"><label class="fl">Next Session</label><input class="fi" type="datetime-local" value="${c.nextSession||''}" onchange="upd('${id}','nextSession',this.value)"/></div>
       <div class="fg"><label class="fl">Pkg End Date</label><input class="fi" type="date" value="${c.packageEndDate||''}" onchange="upd('${id}','packageEndDate',this.value)"/></div>
     </div>
-    <div style="margin-bottom:14px">
-      <label class="fl" style="margin-bottom:8px">Enrollment Checklist</label>
+    <div style="margin-bottom:12px">
+      <label class="fl" style="margin-bottom:6px">Enrollment Checklist</label>
       ${ESTEPS.map((s,i)=>{const k='s'+i;const d=ec[k]||false;return`<div class="cli ${d?'done':''}" onclick="togE('${id}','${k}')"><div class="cdot">${d?'✓':''}</div><span>${i+1}. ${s}</span></div>`}).join('')}
     </div>
-    <div class="fg"><label class="fl">Phone</label><input class="fi" value="${c.phone||''}" onchange="upd('${id}','phone',this.value)"/></div>
-    <div class="fg"><label class="fl">Email</label><input class="fi" value="${c.email||''}" onchange="upd('${id}','email',this.value)"/></div>
     <div class="fg"><label class="fl">Notes</label><textarea class="fi" rows="3" style="resize:vertical" onchange="upd('${id}','notes',this.value)">${c.notes||''}</textarea></div>`;
   om('mDetail');
 }
 
-function upd(id,f,v){
-  const c=S.clients.find(x=>x.id===id);if(!c)return;
-  if(f==='package'){c.package=v;c.totalSessions=PKG_S[v]||0;}
-  else c[f]=v;
-  ss();
-}
+function upd(id,f,v){const c=S.clients.find(x=>x.id===id);if(!c)return;if(f==='package'){c.package=v;c.totalSessions=PKG_S[v]||0;}else c[f]=v;ss();}
+function togE(id,k){const c=S.clients.find(x=>x.id===id);if(!c)return;if(!c.enrollmentChecklist)c.enrollmentChecklist={};c.enrollmentChecklist[k]=!c.enrollmentChecklist[k];ss();openDet(id);}
+function deleteClient(){if(!curCli)return;const c=S.clients.find(x=>x.id===curCli);if(!confirm(`Delete ${c?.name}?`))return;S.clients=S.clients.filter(x=>x.id!==curCli);ss();cm('mDetail');renderClients();toast('Deleted');}
 
-function togE(id,k){
-  const c=S.clients.find(x=>x.id===id);if(!c)return;
-  if(!c.enrollmentChecklist)c.enrollmentChecklist={};
-  c.enrollmentChecklist[k]=!c.enrollmentChecklist[k];
-  ss();openDet(id);
-}
-
-function deleteClient(){
-  if(!curCli)return;
-  const c=S.clients.find(x=>x.id===curCli);
-  if(!confirm(`Delete ${c?.name}? This cannot be undone.`))return;
-  S.clients=S.clients.filter(x=>x.id!==curCli);
-  ss();cm('mDetail');renderClients();toast('Client deleted');
-}
-
-// SESSIONS
+// ══════════════════════════════════════════════════════════
+// SESSIONS VIEW
+// ══════════════════════════════════════════════════════════
 function rSessions(){
   const ac=S.clients.filter(c=>c.stage==='active');
   const tb=document.getElementById('sbody');
@@ -686,15 +926,15 @@ function rSessions(){
     const exp=c.packageEndDate?dUntil(c.packageEndDate):null;
     const ec=exp===null?'':exp>21?'ek':exp>7?'ew':'ed';
     const st=done>=total?'Completed':exp!==null&&exp<0?'Overdue':exp!==null&&exp<=14?'Expiring soon':'On track';
-    const sc=st==='On track'?'var(--ok)':st==='Completed'?'var(--brand)':'var(--warn)';
+    const sc=st==='On track'?'var(--ok)':st==='Completed'?'var(--brand)':'var(--wn)';
     return`<tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="width:28px;height:28px;font-size:11px">${inits(c.name)}</div><span style="font-weight:600">${c.name}</span></div></td>
-      <td><span style="font-size:12px;color:var(--text2)">${c.package||'—'}</span></td>
+      <td><div style="display:flex;align-items:center;gap:7px"><div class="av" style="width:27px;height:27px;font-size:10px">${inits(c.name)}</div><span style="font-weight:600">${c.name}</span></div></td>
+      <td><span style="font-size:12px;color:var(--tx2)">${c.package||'—'}</span></td>
       <td><div class="spr"><div class="sbar"><div class="sbf" style="width:${pct}%"></div></div><span class="sfr">${done}/${total}</span></div></td>
       <td><span style="font-size:12px">${fmtDT(c.nextSession)}</span></td>
-      <td>${c.packageEndDate?`<span class="eb ${ec}">${exp===null?'—':exp<0?'Expired':exp===0?'Today':exp+'d left'}</span>`:'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+      <td>${c.packageEndDate?`<span class="eb ${ec}">${exp===null?'—':exp<0?'Expired':exp===0?'Today':exp+'d'}</span>`:'<span style="color:var(--tx3);font-size:12px">—</span>'}</td>
       <td><span style="font-size:12px;font-weight:500;color:${sc}">${st}</span></td>
-      <td><button class="btn btn-o" style="font-size:11px;padding:5px 10px" onclick="mrkDone('${c.id}')">+ Session</button></td>
+      <td><button class="btn btn-o btn-sm" onclick="mrkDone('${c.id}')">+ Session</button></td>
     </tr>`;
   }).join('');
 }
@@ -707,79 +947,38 @@ function mrkDone(id){
   else toast('All sessions completed');
 }
 
-// GOOGLE TASKS
+// ══════════════════════════════════════════════════════════
+// GOOGLE TASKS VIEW
+// ══════════════════════════════════════════════════════════
 function rGTasks(){
   const el=document.getElementById('gtbody');
   if(!S.gtoken){
     el.innerHTML=`<div class="gtc">
-      <div class="gth">Connect Google Tasks</div>
-      <div class="gts">Sync your existing task lists to see them in Today and Week views.</div>
-      <div class="setup-box">
-        <strong>One-time setup:</strong><br>
-        1. Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--brand)">console.cloud.google.com</a><br>
-        2. Create a project → Enable <strong>Google Tasks API</strong><br>
-        3. OAuth 2.0 credentials → Web application<br>
-        4. Add your site URL as authorised origin<br>
-        5. Paste your Client ID below
-      </div>
-      <div style="max-width:360px;margin:0 auto 16px;text-align:left">
-        <label class="fl">Google OAuth Client ID</label>
-        <input class="fi" id="gcid" placeholder="xxxxxx.apps.googleusercontent.com"/>
-      </div>
-      <button class="btn btn-p" onclick="gConnect()">Connect Google Tasks</button>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px">Connect Google</div>
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:20px">Connect from the Setup tab to see your Google Tasks here.</div>
+      <button class="btn btn-p" onclick="go('setup',document.querySelector('[data-view=setup]'))">Go to Setup</button>
     </div>`;
-  } else {
-    el.innerHTML=`<div class="ch"><span class="ct">Google Tasks</span><button class="btn btn-o" style="font-size:12px" onclick="gDisc()">Disconnect</button></div><div id="glists"><div class="es">Loading…</div></div>`;
+  }else{
+    el.innerHTML=`<div class="ch"><span class="ct">Google Tasks</span><button class="btn btn-o btn-sm" onclick="doSync()">↻ Sync now</button></div><div id="glists"><div class="es">Loading…</div></div>`;
     fetchGT();
   }
 }
 
-function gConnect(){
-  const cid=document.getElementById('gcid').value.trim();
-  if(!cid){toast('Please enter Client ID');return;}
-  localStorage.setItem('rh_gcid',cid);
-  gAuth(cid);
-}
-
-function gDisc(){
-  S.gtoken=null;localStorage.removeItem('rh_gcid');ss();
-  document.getElementById('sdot').style.background='#888';
-  document.getElementById('stext').textContent='Not synced';
-  rGTasks();
-}
-
-function gAuth(cid){
-  if(!cid)return;
-  const sc=document.createElement('script');
-  sc.src='https://accounts.google.com/gsi/client';
-  sc.onload=()=>{
-    window._tc=google.accounts.oauth2.initTokenClient({
-      client_id:cid,scope:'https://www.googleapis.com/auth/tasks',
-      callback:(r)=>{
-        if(r.error){toast('Auth error: '+r.error);return;}
-        S.gtoken=r.access_token;S.gsync=new Date().toISOString();ss();
-        document.getElementById('sdot').style.background='#4caf50';
-        document.getElementById('stext').textContent='Connected';
-        rGTasks();toast('Google Tasks connected!');
-      }
-    });
-    window._tc.requestAccessToken();
-  };
-  document.head.appendChild(sc);
-}
-
-function doSync(){
-  const cid=localStorage.getItem('rh_gcid');
-  if(!cid){go('gtasks',document.querySelector('[data-view="gtasks"]'));return;}
-  if(!window._tc){gAuth(cid);return;}
-  window._tc.requestAccessToken({prompt:''});
+async function doSync(){
+  if(!S.gtoken){go('setup',document.querySelector('[data-view=setup]'));return;}
+  toast('Syncing…');
+  await fetchGT();
+  const v=document.querySelector('.ni.active').dataset.view;
+  if(v==='week')rWeek();
+  else if(v==='today')rToday();
+  else if(v==='gtasks')rGTasks();
 }
 
 async function fetchGT(){
   if(!S.gtoken)return;
   try{
     const lr=await fetch('https://www.googleapis.com/tasks/v1/users/@me/lists',{headers:{Authorization:'Bearer '+S.gtoken}});
-    if(!lr.ok){S.gtoken=null;ss();rGTasks();return;}
+    if(!lr.ok){if(lr.status===401){S.gtoken=null;ss();setDot('gDot','err');document.getElementById('gText').textContent='Google · Expired';}return;}
     const ld=await lr.json();
     const lists=ld.items||[];
     for(const l of lists){
@@ -791,23 +990,109 @@ async function fetchGT(){
         }
       });
     }
-    S.gsync=new Date().toISOString();ss();
-    const ltime=new Date(S.gsync).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('stext').textContent='Synced '+ltime;
-    const gl=document.getElementById('glists');
-    if(!gl)return;
+    ss();
+    const ltime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('gText').textContent='Google · '+ltime;
+    const gl=document.getElementById('glists');if(!gl)return;
     gl.innerHTML=lists.map(l=>{
       const lt=S.tasks.filter(t=>t.list===l.title&&t.source==='google');
-      return`<div style="margin-bottom:14px">
-        <div style="background:var(--brand-light);color:var(--brand);padding:8px 12px;border-radius:var(--rs);font-size:13px;font-weight:600;margin-bottom:6px">${l.title} <span style="font-size:11px;opacity:.7">(${lt.length})</span></div>
-        ${lt.map(tHTML).join('')||'<div style="font-size:12px;color:var(--text3);padding:6px 10px">No tasks</div>'}
+      return`<div style="margin-bottom:12px">
+        <div style="background:var(--bl);color:var(--brand);padding:7px 11px;border-radius:var(--rs);font-size:13px;font-weight:600;margin-bottom:5px">${l.title} <span style="font-size:11px;opacity:.6">(${lt.length})</span></div>
+        ${lt.map(tHTML).join('')||'<div style="font-size:12px;color:var(--tx3);padding:5px 10px">No tasks</div>'}
       </div>`;
     }).join('');
-    toast(`Synced ${S.tasks.filter(t=>t.source==='google').length} tasks`);
+    toast(`Synced ${S.tasks.filter(t=>t.source==='google').length} Google Tasks`);
   }catch(e){toast('Sync failed. Check connection.');}
 }
 
+// ══════════════════════════════════════════════════════════
+// SETUP VIEW
+// ══════════════════════════════════════════════════════════
+function rSetup(){
+  // Pre-fill saved Firebase config
+  ['apiKey','authDomain','databaseURL','projectId'].forEach(k=>{
+    const v=localStorage.getItem('rh_fb_'+k);
+    const el=document.getElementById('fb_'+k.replace('databaseURL','dbUrl'));
+    if(el&&v)el.value=v;
+  });
+  const gcid=localStorage.getItem('rh_gcid');
+  if(gcid){const el=document.getElementById('gcid');if(el)el.value=gcid;}
+
+  // Firebase status
+  const fbEl=document.getElementById('fbStatus');
+  if(fbEl){
+    if(fbReady){fbEl.className='setup-status ok';fbEl.innerHTML='✓ Connected — live sync active';}
+    else if(localStorage.getItem('rh_fb_apiKey')){fbEl.className='setup-status warn';fbEl.innerHTML='⚠ Config saved — refresh to reconnect';}
+    else{fbEl.className='setup-status err';fbEl.innerHTML='✗ Not configured — fill in details below';}
+  }
+
+  // Google status
+  const gEl=document.getElementById('gStatus');
+  if(gEl){
+    if(S.gtoken){gEl.className='setup-status ok';gEl.innerHTML='✓ Google connected — Tasks & Calendar active';}
+    else if(localStorage.getItem('rh_gcid')){gEl.className='setup-status warn';gEl.innerHTML='⚠ Client ID saved — click Connect to auth';}
+    else{gEl.className='setup-status err';gEl.innerHTML='✗ Not connected — enter Client ID below';}
+  }
+
+  updateSetupStatus();
+}
+
+function updateSetupStatus(){
+  const el=document.getElementById('connSummary');if(!el)return;
+  const items=[
+    {label:'Firebase',ok:fbReady,sub:fbReady?'Real-time sync active':'Not configured'},
+    {label:'Google Tasks',ok:!!S.gtoken,sub:S.gtoken?'Synced':'Not connected'},
+    {label:'Google Calendar',ok:!!S.gtoken,sub:S.gtoken?'Events syncing':'Not connected'},
+    {label:'Live Sync',ok:fbReady&&!!S.gtoken,sub:fbReady&&S.gtoken?'Fully operational':'Partial — some features offline'},
+  ];
+  el.innerHTML=items.map(i=>`
+    <div style="background:${i.ok?'var(--okb)':'var(--bg)'};border:1px solid ${i.ok?'var(--ok)':'var(--bdr)'};border-radius:var(--rs);padding:12px">
+      <div style="font-size:12px;font-weight:600;color:${i.ok?'var(--ok)':'var(--tx2)'};margin-bottom:3px">${i.ok?'✓':'○'} ${i.label}</div>
+      <div style="font-size:11px;color:var(--tx3)">${i.sub}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// GOOGLE AUTH
+// ══════════════════════════════════════════════════════════
+function gConnect(){
+  const cid=document.getElementById('gcid').value.trim()||localStorage.getItem('rh_gcid');
+  if(!cid){toast('Enter your Google Client ID');return;}
+  localStorage.setItem('rh_gcid',cid);
+  gAuth(cid);
+}
+
+function gDisc(){
+  S.gtoken=null;localStorage.removeItem('rh_gcid');ss();
+  setDot('gDot','err');document.getElementById('gText').textContent='Google · Disconnected';
+  rSetup();toast('Google disconnected');
+}
+
+function gAuth(cid){
+  if(!cid)return;
+  const sc=document.createElement('script');
+  sc.src='https://accounts.google.com/gsi/client';
+  sc.onload=()=>{
+    window._tc=google.accounts.oauth2.initTokenClient({
+      client_id:cid,
+      scope:'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
+      callback:(r)=>{
+        if(r.error){toast('Auth error: '+r.error);return;}
+        S.gtoken=r.access_token;ss();
+        setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
+        updateSetupStatus();
+        const v=document.querySelector('.ni.active').dataset.view;if(v==='setup')rSetup();
+        toast('Google connected — Tasks & Calendar active!');
+      }
+    });
+    window._tc.requestAccessToken();
+  };
+  document.head.appendChild(sc);
+}
+
+// ══════════════════════════════════════════════════════════
 // MODALS
+// ══════════════════════════════════════════════════════════
 function om(id){
   if(id==='mTask'){
     document.getElementById('tDate').value=tod();
@@ -841,10 +1126,17 @@ function saveClient(){
   toast(n+' added');render(document.querySelector('.ni.active').dataset.view);
 }
 
+// ══════════════════════════════════════════════════════════
 // INIT
+// ══════════════════════════════════════════════════════════
+loadFirebaseConfig();
 rToday();
-const sc=localStorage.getItem('rh_gcid');
-if(sc&&S.gtoken){document.getElementById('sdot').style.background='#4caf50';document.getElementById('stext').textContent='Connected';}
+const scid=localStorage.getItem('rh_gcid');
+if(scid&&S.gtoken){
+  setDot('gDot','ok');
+  document.getElementById('gText').textContent='Google · Active';
+}
+if(!fbReady){setDot('fbDot','err');document.getElementById('fbText').textContent='Firebase · Not set';}
 </script>
 </body>
 </html>
