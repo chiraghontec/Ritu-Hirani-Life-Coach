@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritu Hirani | Life Coach — Ops Dashboard</title>
+<style>
+:root {
+  --brand:#4A235A;--brand-mid:#7B3FA0;--brand-light:#F3EAF9;--brand-accent:#7F77DD;
+  --white:#FFFFFF;--bg:#F8F7FC;--card:#FFFFFF;--border:#E8E0F0;
+  --text:#1A1A1A;--text2:#666;--text3:#999;
+  --ok:#1A7A3C;--ok-bg:#E6F4EC;--warn:#C4601A;--warn-bg:#FDF0E8;
+  --danger:#C0392B;--danger-bg:#FAECE7;
+  --sess-bg:#EEEDFE;--sess-text:#3C3489;
+  --r:12px;--rs:8px;--sw:220px;--th:64px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sb{width:var(--sw);background:var(--brand);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.sb-logo .ln{font-size:16px;font-weight:600;color:#fff}
+.sb-logo .ls{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
+.nav-sec{padding:12px 8px;flex:1}
+.nl{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(255,255,255,.4);text-transform:uppercase;padding:8px 10px 4px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rs);cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;user-select:none}
+.ni:hover{background:rgba(255,255,255,.1);color:#fff}
+.ni.active{background:var(--brand-light);color:var(--brand)}
+.ni svg{width:16px;height:16px;flex-shrink:0}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.15)}
+.sync-st{font-size:11px;color:rgba(255,255,255,.5)}
+.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#888;margin-right:4px;vertical-align:middle}
+.sync-btn{margin-top:8px;width:100%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:12px;padding:7px 12px;border-radius:var(--rs);cursor:pointer;transition:background .15s}
+.sync-btn:hover{background:rgba(255,255,255,.25)}
+
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:var(--th);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-info{flex:1}
+.topbar-title{font-size:18px;font-weight:600}
+.topbar-date{font-size:12px;color:var(--text2);margin-top:1px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--brand);color:#fff}.btn-p:hover{opacity:.9}
+.btn-o{background:transparent;border:1.5px solid var(--border);color:var(--text)}.btn-o:hover{background:var(--bg)}
+.content{padding:24px;flex:1}
+.view{display:none}.view.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ct{font-size:14px;font-weight:600}
+.cc{background:var(--brand-light);color:var(--brand);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* STAT */
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px}
+.sl{font-size:11px;color:var(--text2);margin-bottom:4px}
+.sv{font-size:24px;font-weight:600;color:var(--brand)}
+.ss{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* TASK */
+.ti{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ti:last-child{border-bottom:none}
+.tck{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.tck.done{background:var(--brand);border-color:var(--brand)}
+.tck.done::after{content:'';width:6px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block}
+.tb{flex:1}
+.tt{font-size:13px;font-weight:500;line-height:1.4}
+.tt.done{text-decoration:line-through;color:var(--text3)}
+.tm{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+.tg-s{background:var(--sess-bg);color:var(--sess-text)}
+.tg-a{background:#F1EFE8;color:#444}
+.tg-e{background:#E6F1FB;color:#0C447C}
+.tg-c{background:#FAEEDA;color:#633806}
+.tg-f{background:#FAECE7;color:#712B13}
+.tg-g{background:#E8F0FA;color:#185FA5}
+.tdel{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;opacity:0;padding:2px 4px;border-radius:4px;transition:opacity .15s}
+.ti:hover .tdel{opacity:1}
+.tdel:hover{color:var(--danger)}
+
+/* SESSION BLOCK */
+.sb2{padding:10px 12px;border-radius:var(--rs);margin-bottom:8px}
+.sb2.session{background:var(--sess-bg);border-left:3px solid var(--sess-text)}
+.sb2.empty{background:var(--bg);border-left:3px solid var(--border)}
+.sbt{font-size:11px;color:var(--text3);margin-bottom:2px}
+.sbn{font-size:13px;font-weight:600;color:var(--sess-text)}
+.sbp{font-size:11px;color:var(--text2)}
+
+/* ACTION */
+.ai{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:var(--rs);margin-bottom:6px;font-size:12px}
+.ad{width:6px;height:6px;border-radius:50%;background:var(--warn);flex-shrink:0}
+.ad.u{background:var(--danger)}.ad.k{background:var(--ok)}
+
+/* PIPELINE */
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start}
+.ph{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.pc{background:var(--border);color:var(--text2);font-size:10px;padding:1px 6px;border-radius:20px}
+.cc2{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s}
+.cc2:hover{border-color:var(--brand-accent);transform:translateY(-1px)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.cn{font-size:13px;font-weight:600;margin-bottom:2px}
+.cpk{font-size:11px;color:var(--text2);margin-bottom:6px}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+.b-paid{background:var(--ok-bg);color:var(--ok)}
+.b-pend{background:var(--warn-bg);color:var(--warn)}
+.b-part{background:#E6F1FB;color:#0C447C}
+.pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-top:4px}
+.pfill{height:100%;background:var(--brand-accent);border-radius:2px;transition:width .3s}
+
+/* SESSIONS TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);border-bottom:2px solid var(--border)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--brand-light)}
+.spr{display:flex;align-items:center;gap:8px}
+.sbar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.sbf{height:100%;background:var(--brand-accent);border-radius:3px}
+.sfr{font-size:12px;color:var(--text2);white-space:nowrap}
+.eb{font-size:11px;padding:3px 8px;border-radius:20px}
+.ek{background:var(--ok-bg);color:var(--ok)}.ew{background:var(--warn-bg);color:var(--warn)}.ed{background:var(--danger-bg);color:var(--danger)}
+
+/* WEEK */
+.wn{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.wnb{background:var(--card);border:1px solid var(--border);width:32px;height:32px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2);transition:background .15s}
+.wnb:hover{background:var(--brand-light)}
+.wr{font-size:14px;font-weight:600}
+.wg{background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.wgh{display:grid;grid-template-columns:56px repeat(6,1fr);background:var(--brand);color:#fff}
+.wgh>div{padding:10px 6px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.3px}
+.wgb{display:grid;grid-template-columns:56px repeat(6,1fr)}
+.wzl{grid-column:1/-1;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:5px 12px;color:var(--text3)}
+.wzl.sz{background:var(--sess-bg);color:var(--sess-text)}
+.wzl.bz{background:var(--bg);color:var(--text3)}
+.wzl.pz{background:#FAEEDA;color:#633806}
+.wtl{padding:8px 6px;font-size:10px;color:var(--text3);text-align:right;border-right:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end}
+.ws{min-height:60px;padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer}
+.ws:last-child{border-right:none}
+.ws:hover{background:var(--brand-light)}
+.bl{height:100%;min-height:52px;border-radius:6px;padding:5px 7px;font-size:11px}
+.bl.session{background:var(--sess-bg);color:var(--sess-text)}
+.bl.consultation{background:#E6F1FB;color:#0C447C}
+.bl.content{background:#FAEEDA;color:#633806}
+.bl.admin{background:#F1EFE8;color:#444}
+.bl.corporate{background:#EAF3DE;color:#27500A}
+.bl.break{background:#F5F5F3;color:#888}
+.bl.empty{background:none;border:1.5px dashed var(--border);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.35}
+.bln{font-weight:600;line-height:1.3}
+.blp{font-size:10px;opacity:.75;margin-top:1px}
+
+/* MODAL */
+.mb{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+.mb.open{display:flex}
+.mo{background:#fff;border-radius:var(--r);padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.mt{font-size:16px;font-weight:600;margin-bottom:20px;color:var(--brand)}
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.fi{width:100%;padding:9px 12px;border-radius:var(--rs);border:1.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--text);transition:border-color .15s;font-family:inherit}
+.fi:focus{outline:none;border-color:var(--brand-accent)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ma{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.cli{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;color:var(--text2);cursor:pointer}
+.cli.done{color:var(--ok)}
+.cdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cli.done .cdot{background:var(--ok);border-color:var(--ok);color:#fff;font-size:9px;font-weight:700}
+
+/* GTASKS */
+.gtc{text-align:center;padding:40px 30px;border:2px dashed var(--border);border-radius:var(--r)}
+.gth{font-size:16px;font-weight:600;margin-bottom:8px}
+.gts{font-size:13px;color:var(--text2);margin-bottom:20px}
+.setup-box{background:var(--bg);border-radius:var(--rs);padding:14px 16px;font-size:12px;color:var(--text2);text-align:left;margin-bottom:18px;line-height:1.8}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--brand);color:#fff;padding:12px 18px;border-radius:var(--rs);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* EMPTY */
+.es{text-align:center;padding:30px;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+
+<nav class="sb">
+  <div class="sb-logo"><div class="ln">Ritu Hirani</div><div class="ls">Life Coach · Ops Dashboard</div></div>
+  <div class="nav-sec">
+    <div class="nl">Views</div>
+    <div class="ni active" data-view="today" onclick="go('today',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Today
+    </div>
+    <div class="ni" data-view="week" onclick="go('week',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>This Week
+    </div>
+    <div class="nl">Work</div>
+    <div class="ni" data-view="clients" onclick="go('clients',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Clients
+    </div>
+    <div class="ni" data-view="sessions" onclick="go('sessions',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Sessions
+    </div>
+    <div class="nl">Sync</div>
+    <div class="ni" data-view="gtasks" onclick="go('gtasks',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Google Tasks
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div class="sync-st"><span class="sync-dot" id="sdot"></span><span id="stext">Not synced</span></div>
+    <button class="sync-btn" onclick="doSync()">↻ Sync Google Tasks</button>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-info">
+      <div class="topbar-title" id="vtitle">Today</div>
+      <div class="topbar-date" id="vdate"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-o" onclick="om('mTask')">+ Add Task</button>
+      <button class="btn btn-p" onclick="om('mClient')">+ Add Client</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TODAY -->
+    <div class="view active" id="view-today">
+      <div class="g4" id="stats" style="margin-bottom:16px"></div>
+      <div class="g2">
+        <div>
+          <div class="card">
+            <div class="ch"><span class="ct">Today's Tasks</span><span class="cc" id="tcnt">0</span></div>
+            <div id="tlist"></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="ch"><span class="ct">Today's Sessions</span></div>
+            <div id="tsess"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><span class="ct">Pending Actions</span></div>
+            <div id="pact"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK -->
+    <div class="view" id="view-week">
+      <div class="wn">
+        <button class="wnb" onclick="cw(-1)">‹</button>
+        <div class="wr" id="wrange"></div>
+        <button class="wnb" onclick="cw(1)">›</button>
+        <button class="btn btn-o" style="font-size:12px;padding:5px 12px;margin-left:6px" onclick="cw(0,true)">Today</button>
+      </div>
+      <div class="wg" id="wgrid"></div>
+      <div style="margin-top:16px">
+        <div class="card"><div class="ch"><span class="ct">Tasks This Week</span></div><div id="wtasks"></div></div>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="view" id="view-clients">
+      <div class="pipe" id="pipe"></div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div class="view" id="view-sessions">
+      <div class="card">
+        <div class="ch"><span class="ct">Session Tracker</span></div>
+        <table class="tbl"><thead><tr><th>Client</th><th>Package</th><th>Progress</th><th>Next Session</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
+        <tbody id="sbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- GOOGLE TASKS -->
+    <div class="view" id="view-gtasks">
+      <div class="card" id="gtbody"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ADD TASK MODAL -->
+<div class="mb" id="mTask">
+  <div class="mo">
+    <div class="mt">Add Task</div>
+    <div class="fg"><label class="fl">Title *</label><input class="fi" id="tTitle" placeholder="e.g. Send onboarding form to Priya"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="tDate"/></div>
+      <div class="fg"><label class="fl">Due Time</label><input class="fi" type="time" id="tTime"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fi" id="tCat">
+          <option value="admin">Admin / Ops</option>
+          <option value="session">Session</option>
+          <option value="enrollment">Enrollment</option>
+          <option value="content">Content</option>
+          <option value="followup">Follow-up</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Client</label><select class="fi" id="tCli"><option value="">— None —</option></select></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-o" onclick="cm('mTask')">Cancel</button>
+      <button class="btn btn-p" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CLIENT MODAL -->
+<div class="mb" id="mClient">
+  <div class="mo">
+    <div class="mt">Add Client</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="cName" placeholder="Full name"/></div>
+      <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cPhone" placeholder="+91 ..."/></div>
+    </div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="cEmail" placeholder="email@example.com"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Package</label>
+        <select class="fi" id="cPkg">
+          <option value="">— Select —</option>
+          <option value="Starter Package">Starter (6 sessions · 2 months)</option>
+          <option value="Growth Package">Growth (12 sessions · 3 months)</option>
+          <option value="Transformation Package">Transformation (20 sessions · 6 months)</option>
+          <option value="Relationship Coaching">Relationship Coaching (12 sessions)</option>
+          <option value="Personality Development">Personality Development (8 sessions)</option>
+          <option value="Impact Session">Impact Session (1 session)</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Stage</label>
+        <select class="fi" id="cStage">
+          <option value="lead">Lead</option>
+          <option value="consultation">Consultation</option>
+          <option value="enrolled">Enrolled</option>
+          <option value="active">Active</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Payment</label>
+        <select class="fi" id="cPay">
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="part-paid">Part-paid</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Start Date</label><input class="fi" type="date" id="cStart"/></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-o" onclick="cm('mClient')">Cancel</button>
+      <button class="btn btn-p" onclick="saveClient()">Add Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT DETAIL MODAL -->
+<div class="mb" id="mDetail">
+  <div class="mo" style="width:520px">
+    <div id="detContent"></div>
+    <div class="ma">
+      <button class="btn btn-o" style="color:var(--danger);border-color:var(--danger)" onclick="deleteClient()">Delete</button>
+      <button class="btn btn-o" onclick="cm('mDetail')">Close</button>
+      <button class="btn btn-p" onclick="cm('mDetail');renderClients();toast('Saved')">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+const PKG_S={
+  'Starter Package':6,'Growth Package':12,'Transformation Package':20,
+  'Relationship Coaching':12,'Personality Development':8,'Impact Session':1
+};
+const PKG_M={
+  'Starter Package':2,'Growth Package':3,'Transformation Package':6,
+  'Relationship Coaching':3,'Personality Development':2,'Impact Session':0
+};
+const STAGES=['lead','consultation','enrolled','active','offboarded'];
+const SLABELS={lead:'Lead',consultation:'Consultation',enrolled:'Enrolled',active:'Active',offboarded:'Offboarded'};
+const ESTEPS=['Package selected','Registration form filled','Payment received','Confirmation sent','E-contract signed','Session 1 scheduled','Client ready'];
+const DAYS_K=['tue','wed','thu','fri','sat','sun'];
+const DAYS_L=['Tue','Wed','Thu','Fri','Sat','Sun'];
+const VTITLES={today:'Today',week:'This Week',clients:'Clients',sessions:'Sessions',gtasks:'Google Tasks'};
+
+function ls(){const s=localStorage.getItem('rh_ops');return s?JSON.parse(s):{clients:[],tasks:[],schedule:{},gtoken:null,gsync:null,woff:0}}
+function ss(){localStorage.setItem('rh_ops',JSON.stringify(S))}
+let S=ls();
+let curCli=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function tod(){return new Date().toISOString().split('T')[0]}
+function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
+function fmtDT(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
+function dUntil(d){if(!d)return null;const a=new Date(d+'T00:00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
+function inits(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function toast(m,d=2500){const t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d)}
+
+function wkStart(off=0){
+  const n=new Date(),day=n.getDay(),diff=day===0?-6:1-day,m=new Date(n);
+  m.setDate(n.getDate()+diff+(off*7));m.setHours(0,0,0,0);return m;
+}
+function wkDays(off=0){
+  const m=wkStart(off),days=[];
+  for(let i=1;i<=6;i++){const d=new Date(m);d.setDate(m.getDate()+i);days.push(d);}
+  return days;
+}
+
+// NAV
+function go(v,el){
+  document.querySelectorAll('.ni').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('vtitle').textContent=VTITLES[v]||v;
+  render(v);
+}
+function render(v){
+  if(v==='today')rToday();
+  else if(v==='week')rWeek();
+  else if(v==='clients')renderClients();
+  else if(v==='sessions')rSessions();
+  else if(v==='gtasks')rGTasks();
+}
+
+// INIT TOPBAR
+(function(){
+  const n=new Date(),h=n.getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  document.getElementById('vdate').textContent=g+', Chirag · '+n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+})();
+
+// TODAY
+function rToday(){
+  const td=tod();
+  const ac=S.clients.filter(c=>c.stage==='active').length;
+  const tc=S.tasks.filter(t=>!t.completed&&t.dueDate===td).length;
+  const pp=S.clients.filter(c=>c.paymentStatus==='pending'&&c.stage!=='lead').length;
+  const ws=Object.values(S.schedule).reduce((a,d)=>a+Object.values(d).filter(s=>s&&s.type==='session').length,0);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="sl">Active Clients</div><div class="sv">${ac}</div><div class="ss">Currently coaching</div></div>
+    <div class="stat"><div class="sl">Tasks Today</div><div class="sv">${tc}</div><div class="ss">Due today</div></div>
+    <div class="stat"><div class="sl">Pending Payments</div><div class="sv" style="color:${pp>0?'var(--warn)':'var(--ok)'}">${pp}</div><div class="ss">Awaiting payment</div></div>
+    <div class="stat"><div class="sl">Sessions This Week</div><div class="sv">${ws}</div><div class="ss">Scheduled</div></div>`;
+
+  const ttasks=S.tasks.filter(t=>t.dueDate===td||(!t.dueDate&&!t.completed));
+  document.getElementById('tcnt').textContent=ttasks.filter(t=>!t.completed).length;
+  const tl=document.getElementById('tlist');
+  tl.innerHTML=ttasks.length?ttasks.map(tHTML).join(''):`<div class="es">All caught up for today!</div>`;
+
+  const dow=new Date().getDay(),dk=DAYS_K[dow-1]||'';
+  const ds=dk?(S.schedule[dk]||{}):{};
+  const s1=ds.block1,s2=ds.block2;
+  document.getElementById('tsess').innerHTML=`
+    <div class="sb2 ${s1?s1.type||'session':'empty'}">
+      <div class="sbt">3:00–5:00 PM · Block 1</div>
+      ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--text3)">No session scheduled</div>`}
+    </div>
+    <div class="sb2 ${s2?s2.type||'session':'empty'}">
+      <div class="sbt">6:00–8:00 PM · Block 2</div>
+      ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--text3)">No session scheduled</div>`}
+    </div>`;
+
+  const acts=[];
+  S.clients.forEach(c=>{
+    if(c.paymentStatus==='pending'&&c.stage!=='lead')acts.push({t:`Payment pending — ${c.name}`,u:true});
+    const done=Object.values(c.enrollmentChecklist||{}).filter(Boolean).length;
+    if(c.stage==='enrolled'&&done<7)acts.push({t:`Enrollment step ${done+1}/7 — ${c.name}`,u:false});
+    if(c.stage==='active'&&c.totalSessions){
+      const rem=c.totalSessions-(c.completedSessions||0);
+      const exp=c.packageEndDate?dUntil(c.packageEndDate):null;
+      if(exp!==null&&exp<=14&&rem>0)acts.push({t:`${rem} sessions left · expires in ${exp}d — ${c.name}`,u:exp<=7});
+    }
+  });
+  const pa=document.getElementById('pact');
+  pa.innerHTML=acts.length?acts.map(a=>`<div class="ai"><div class="ad ${a.u?'u':''}"></div><span>${a.t}</span></div>`).join(''):`<div class="es">No pending actions</div>`;
+}
+
+function tHTML(t){
+  const cat={session:'tg-s',admin:'tg-a',enrollment:'tg-e',content:'tg-c',followup:'tg-f'};
+  return`<div class="ti" id="ti-${t.id}">
+    <div class="tck ${t.completed?'done':''}" onclick="tog('${t.id}')"></div>
+    <div class="tb">
+      <div class="tt ${t.completed?'done':''}">${t.title}</div>
+      <div class="tm">
+        ${t.category?`<span class="tag ${cat[t.category]||'tg-a'}">${t.category}</span>`:''}
+        ${t.dueTime?`<span style="font-size:11px;color:var(--text3)">${t.dueTime}</span>`:''}
+        ${t.source==='google'?'<span class="tag tg-g">Google</span>':''}
+      </div>
+    </div>
+    <button class="tdel" onclick="delT('${t.id}')">×</button>
+  </div>`;
+}
+
+function tog(id){const t=S.tasks.find(x=>x.id===id);if(t){t.completed=!t.completed;ss();render(document.querySelector('.ni.active').dataset.view)}}
+function delT(id){S.tasks=S.tasks.filter(t=>t.id!==id);ss();render(document.querySelector('.ni.active').dataset.view);toast('Removed')}
+
+// WEEK
+function cw(d,reset){if(reset)S.woff=0;else S.woff+=d;ss();rWeek()}
+function rWeek(){
+  const days=wkDays(S.woff);
+  const fmt=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+  document.getElementById('wrange').textContent=`${fmt(days[0])} – ${fmt(days[5])} ${days[0].getFullYear()}`;
+  const td=tod(),ds=days.map(d=>d.toISOString().split('T')[0]);
+
+  const zones=[
+    {k:'prep',l:'2:00–3:00 PM · Prep zone',c:'pz'},
+    {k:'block1',l:'3:00–5:00 PM · Session block 1  [ANCHORED]',c:'sz'},
+    {k:'break',l:'5:00–6:00 PM · Break / transition',c:'bz'},
+    {k:'block2',l:'6:00–8:00 PM · Session block 2  [ANCHORED]',c:'sz'},
+  ];
+
+  let h=`<div class="wgh"><div></div>${days.map((d,i)=>`<div style="${ds[i]===td?'background:rgba(255,255,255,.2)':''}">${DAYS_L[i]}<br><span style="font-size:9px;opacity:.6">${d.getDate()}</span></div>`).join('')}</div><div class="wgb">`;
+  zones.forEach(z=>{
+    h+=`<div class="wzl ${z.c}" style="border-bottom:1px solid var(--border)">${z.l}</div><div class="wtl" style="font-size:9px"></div>`;
+    DAYS_K.forEach((dk,di)=>{
+      const sl=(S.schedule[dk]||{})[z.k];
+      const isTd=ds[di]===td;
+      h+=`<div class="ws" style="${isTd?'background:var(--brand-light)':''}" onclick="editSlot('${dk}','${z.k}')">`;
+      if(sl&&sl.label){h+=`<div class="bl ${sl.type||'session'}"><div class="bln">${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}</div>`;}
+      else if(z.k==='block1'||z.k==='block2'){h+=`<div class="bl empty" style="border:1.5px dashed #7F77DD">+</div>`;}
+      else{h+=`<div class="bl empty">+</div>`;}
+      h+=`</div>`;
+    });
+  });
+  h+='</div>';
+  document.getElementById('wgrid').innerHTML=h;
+
+  const ws=wkStart(S.woff),we=new Date(ws);we.setDate(ws.getDate()+7);
+  const wt=S.tasks.filter(t=>{if(!t.dueDate)return false;const d=new Date(t.dueDate+'T00:00:00');return d>=ws&&d<we;});
+  const wtel=document.getElementById('wtasks');
+  if(!wt.length){wtel.innerHTML=`<div class="es">No tasks this week</div>`;return;}
+  const grp={};wt.forEach(t=>{(grp[t.dueDate]=grp[t.dueDate]||[]).push(t)});
+  wtel.innerHTML=Object.entries(grp).sort().map(([date,ts])=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--brand);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:6px">${fmtD(date)}${date===td?' <span style="background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;margin-left:4px">Today</span>':''}</div>
+      ${ts.map(tHTML).join('')}
+    </div>`).join('');
+}
+
+// SLOT EDIT
+let eSlot=null;
+function editSlot(dk,zk){
+  eSlot={dk,zk};
+  const sl=(S.schedule[dk]||{})[zk]||{};
+  const cliOpts=S.clients.filter(c=>c.stage==='active').map(c=>`<option value="${c.id}" ${sl.cliId===c.id?'selected':''}>${c.name}</option>`).join('');
+  const div=document.createElement('div');
+  div.className='mb open';div.id='mSlot';
+  div.innerHTML=`<div class="mo">
+    <div class="mt">Edit Slot · ${dk} · ${zk}</div>
+    <div class="fg"><label class="fl">Block Type</label>
+      <select class="fi" id="slType">
+        ${['session','consultation','content','admin','corporate','break'].map(t=>`<option value="${t}" ${sl.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+        <option value="empty" ${!sl.label?'selected':''}>— Clear —</option>
+      </select></div>
+    <div class="fg"><label class="fl">Label</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
+    <div class="fg"><label class="fl">Client</label><select class="fi" id="slCli"><option value="">— None —</option>${cliOpts}</select></div>
+    <div class="fg"><label class="fl">Package / Notes</label><input class="fi" id="slPkg" value="${sl.pkg||''}"/></div>
+    <div class="ma">
+      <button class="btn btn-o" style="color:var(--danger);border-color:var(--danger)" onclick="clearSlot()">Clear</button>
+      <button class="btn btn-o" onclick="document.getElementById('mSlot').remove()">Cancel</button>
+      <button class="btn btn-p" onclick="saveSlot()">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',e=>{if(e.target===div)div.remove()});
+}
+
+function clearSlot(){
+  if(!eSlot)return;
+  if(!S.schedule[eSlot.dk])S.schedule[eSlot.dk]={};
+  delete S.schedule[eSlot.dk][eSlot.zk];
+  ss();document.getElementById('mSlot').remove();rWeek();
+}
+function saveSlot(){
+  if(!eSlot)return;
+  const t=document.getElementById('slType').value;
+  const l=document.getElementById('slLabel').value.trim();
+  const cid=document.getElementById('slCli').value;
+  const p=document.getElementById('slPkg').value.trim();
+  if(!S.schedule[eSlot.dk])S.schedule[eSlot.dk]={};
+  if(t==='empty'&&!l){delete S.schedule[eSlot.dk][eSlot.zk];}
+  else{
+    const cli=cid?S.clients.find(c=>c.id===cid):null;
+    S.schedule[eSlot.dk][eSlot.zk]={type:t,label:l||(cli?cli.name:t),cliId:cid||null,pkg:p||(cli?cli.package:'')};
+  }
+  ss();document.getElementById('mSlot').remove();rWeek();toast('Slot saved');
+}
+
+// CLIENTS
+function renderClients(){
+  let h='';
+  STAGES.forEach(st=>{
+    const clis=S.clients.filter(c=>c.stage===st);
+    h+=`<div><div class="ph">${SLABELS[st]}<span class="pc">${clis.length}</span></div>`;
+    if(!clis.length)h+=`<div style="border:1.5px dashed var(--border);border-radius:var(--rs);padding:14px;text-align:center;font-size:12px;color:var(--text3)">Empty</div>`;
+    clis.forEach(c=>{
+      const done=Object.values(c.enrollmentChecklist||{}).filter(Boolean).length;
+      const pct=Math.round((done/ESTEPS.length)*100);
+      const pb=c.paymentStatus==='paid'?'b-paid':c.paymentStatus==='part-paid'?'b-part':'b-pend';
+      h+=`<div class="cc2" onclick="openDet('${c.id}')">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div class="av">${inits(c.name)}</div>
+          <div><div class="cn">${c.name}</div><div class="cpk">${c.package||'No package'}</div></div>
+        </div>
+        <span class="badge ${pb}">${c.paymentStatus||'pending'}</span>
+        ${st!=='lead'?`<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>Enrollment</span><span>${done}/${ESTEPS.length}</span></div><div class="pbar"><div class="pfill" style="width:${pct}%"></div></div></div>`:''}
+        ${st==='active'&&c.totalSessions?`<div style="margin-top:5px;font-size:11px;color:var(--text3)">${c.completedSessions||0}/${c.totalSessions} sessions</div>`:''}
+      </div>`;
+    });
+    h+=`</div>`;
+  });
+  document.getElementById('pipe').innerHTML=h;
+}
+
+function openDet(id){
+  curCli=id;
+  const c=S.clients.find(x=>x.id===id);if(!c)return;
+  const ec=c.enrollmentChecklist||{};
+  document.getElementById('detContent').innerHTML=`
+    <div class="mt">${c.name}</div>
+    <div class="fr" style="margin-bottom:14px">
+      <div class="fg"><label class="fl">Package</label><select class="fi" onchange="upd('${id}','package',this.value)">
+        ${Object.keys(PKG_S).map(p=>`<option value="${p}" ${c.package===p?'selected':''}>${p}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label class="fl">Stage</label><select class="fi" onchange="upd('${id}','stage',this.value)">
+        ${STAGES.map(s=>`<option value="${s}" ${c.stage===s?'selected':''}>${SLABELS[s]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label class="fl">Payment</label><select class="fi" onchange="upd('${id}','paymentStatus',this.value)">
+        <option value="paid" ${c.paymentStatus==='paid'?'selected':''}>Paid</option>
+        <option value="pending" ${c.paymentStatus==='pending'?'selected':''}>Pending</option>
+        <option value="part-paid" ${c.paymentStatus==='part-paid'?'selected':''}>Part-paid</option>
+      </select></div>
+      <div class="fg"><label class="fl">Sessions Done</label><input class="fi" type="number" min="0" value="${c.completedSessions||0}" onchange="upd('${id}','completedSessions',+this.value)"/></div>
+      <div class="fg"><label class="fl">Next Session</label><input class="fi" type="datetime-local" value="${c.nextSession||''}" onchange="upd('${id}','nextSession',this.value)"/></div>
+      <div class="fg"><label class="fl">Pkg End Date</label><input class="fi" type="date" value="${c.packageEndDate||''}" onchange="upd('${id}','packageEndDate',this.value)"/></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="fl" style="margin-bottom:8px">Enrollment Checklist</label>
+      ${ESTEPS.map((s,i)=>{const k='s'+i;const d=ec[k]||false;return`<div class="cli ${d?'done':''}" onclick="togE('${id}','${k}')"><div class="cdot">${d?'✓':''}</div><span>${i+1}. ${s}</span></div>`}).join('')}
+    </div>
+    <div class="fg"><label class="fl">Phone</label><input class="fi" value="${c.phone||''}" onchange="upd('${id}','phone',this.value)"/></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" value="${c.email||''}" onchange="upd('${id}','email',this.value)"/></div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fi" rows="3" style="resize:vertical" onchange="upd('${id}','notes',this.value)">${c.notes||''}</textarea></div>`;
+  om('mDetail');
+}
+
+function upd(id,f,v){
+  const c=S.clients.find(x=>x.id===id);if(!c)return;
+  if(f==='package'){c.package=v;c.totalSessions=PKG_S[v]||0;}
+  else c[f]=v;
+  ss();
+}
+
+function togE(id,k){
+  const c=S.clients.find(x=>x.id===id);if(!c)return;
+  if(!c.enrollmentChecklist)c.enrollmentChecklist={};
+  c.enrollmentChecklist[k]=!c.enrollmentChecklist[k];
+  ss();openDet(id);
+}
+
+function deleteClient(){
+  if(!curCli)return;
+  const c=S.clients.find(x=>x.id===curCli);
+  if(!confirm(`Delete ${c?.name}? This cannot be undone.`))return;
+  S.clients=S.clients.filter(x=>x.id!==curCli);
+  ss();cm('mDetail');renderClients();toast('Client deleted');
+}
+
+// SESSIONS
+function rSessions(){
+  const ac=S.clients.filter(c=>c.stage==='active');
+  const tb=document.getElementById('sbody');
+  if(!ac.length){tb.innerHTML=`<tr><td colspan="7"><div class="es">No active clients</div></td></tr>`;return;}
+  tb.innerHTML=ac.map(c=>{
+    const done=c.completedSessions||0,total=c.totalSessions||PKG_S[c.package]||0;
+    const pct=total?Math.round((done/total)*100):0;
+    const exp=c.packageEndDate?dUntil(c.packageEndDate):null;
+    const ec=exp===null?'':exp>21?'ek':exp>7?'ew':'ed';
+    const st=done>=total?'Completed':exp!==null&&exp<0?'Overdue':exp!==null&&exp<=14?'Expiring soon':'On track';
+    const sc=st==='On track'?'var(--ok)':st==='Completed'?'var(--brand)':'var(--warn)';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="width:28px;height:28px;font-size:11px">${inits(c.name)}</div><span style="font-weight:600">${c.name}</span></div></td>
+      <td><span style="font-size:12px;color:var(--text2)">${c.package||'—'}</span></td>
+      <td><div class="spr"><div class="sbar"><div class="sbf" style="width:${pct}%"></div></div><span class="sfr">${done}/${total}</span></div></td>
+      <td><span style="font-size:12px">${fmtDT(c.nextSession)}</span></td>
+      <td>${c.packageEndDate?`<span class="eb ${ec}">${exp===null?'—':exp<0?'Expired':exp===0?'Today':exp+'d left'}</span>`:'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+      <td><span style="font-size:12px;font-weight:500;color:${sc}">${st}</span></td>
+      <td><button class="btn btn-o" style="font-size:11px;padding:5px 10px" onclick="mrkDone('${c.id}')">+ Session</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function mrkDone(id){
+  const c=S.clients.find(x=>x.id===id);if(!c)return;
+  if(!c.completedSessions)c.completedSessions=0;
+  const t=c.totalSessions||PKG_S[c.package]||0;
+  if(c.completedSessions<t){c.completedSessions++;ss();rSessions();toast(`Session done · ${c.completedSessions}/${t}`);}
+  else toast('All sessions completed');
+}
+
+// GOOGLE TASKS
+function rGTasks(){
+  const el=document.getElementById('gtbody');
+  if(!S.gtoken){
+    el.innerHTML=`<div class="gtc">
+      <div class="gth">Connect Google Tasks</div>
+      <div class="gts">Sync your existing task lists to see them in Today and Week views.</div>
+      <div class="setup-box">
+        <strong>One-time setup:</strong><br>
+        1. Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--brand)">console.cloud.google.com</a><br>
+        2. Create a project → Enable <strong>Google Tasks API</strong><br>
+        3. OAuth 2.0 credentials → Web application<br>
+        4. Add your site URL as authorised origin<br>
+        5. Paste your Client ID below
+      </div>
+      <div style="max-width:360px;margin:0 auto 16px;text-align:left">
+        <label class="fl">Google OAuth Client ID</label>
+        <input class="fi" id="gcid" placeholder="xxxxxx.apps.googleusercontent.com"/>
+      </div>
+      <button class="btn btn-p" onclick="gConnect()">Connect Google Tasks</button>
+    </div>`;
+  } else {
+    el.innerHTML=`<div class="ch"><span class="ct">Google Tasks</span><button class="btn btn-o" style="font-size:12px" onclick="gDisc()">Disconnect</button></div><div id="glists"><div class="es">Loading…</div></div>`;
+    fetchGT();
+  }
+}
+
+function gConnect(){
+  const cid=document.getElementById('gcid').value.trim();
+  if(!cid){toast('Please enter Client ID');return;}
+  localStorage.setItem('rh_gcid',cid);
+  gAuth(cid);
+}
+
+function gDisc(){
+  S.gtoken=null;localStorage.removeItem('rh_gcid');ss();
+  document.getElementById('sdot').style.background='#888';
+  document.getElementById('stext').textContent='Not synced';
+  rGTasks();
+}
+
+function gAuth(cid){
+  if(!cid)return;
+  const sc=document.createElement('script');
+  sc.src='https://accounts.google.com/gsi/client';
+  sc.onload=()=>{
+    window._tc=google.accounts.oauth2.initTokenClient({
+      client_id:cid,scope:'https://www.googleapis.com/auth/tasks',
+      callback:(r)=>{
+        if(r.error){toast('Auth error: '+r.error);return;}
+        S.gtoken=r.access_token;S.gsync=new Date().toISOString();ss();
+        document.getElementById('sdot').style.background='#4caf50';
+        document.getElementById('stext').textContent='Connected';
+        rGTasks();toast('Google Tasks connected!');
+      }
+    });
+    window._tc.requestAccessToken();
+  };
+  document.head.appendChild(sc);
+}
+
+function doSync(){
+  const cid=localStorage.getItem('rh_gcid');
+  if(!cid){go('gtasks',document.querySelector('[data-view="gtasks"]'));return;}
+  if(!window._tc){gAuth(cid);return;}
+  window._tc.requestAccessToken({prompt:''});
+}
+
+async function fetchGT(){
+  if(!S.gtoken)return;
+  try{
+    const lr=await fetch('https://www.googleapis.com/tasks/v1/users/@me/lists',{headers:{Authorization:'Bearer '+S.gtoken}});
+    if(!lr.ok){S.gtoken=null;ss();rGTasks();return;}
+    const ld=await lr.json();
+    const lists=ld.items||[];
+    for(const l of lists){
+      const tr=await fetch(`https://www.googleapis.com/tasks/v1/lists/${l.id}/tasks?showCompleted=false&maxResults=50`,{headers:{Authorization:'Bearer '+S.gtoken}});
+      const td=await tr.json();
+      (td.items||[]).filter(t=>t.title).forEach(gt=>{
+        if(!S.tasks.find(t=>t.gid===gt.id)){
+          S.tasks.push({id:uid(),gid:gt.id,title:gt.title,dueDate:gt.due?gt.due.split('T')[0]:null,completed:gt.status==='completed',category:'admin',source:'google',list:l.title});
+        }
+      });
+    }
+    S.gsync=new Date().toISOString();ss();
+    const ltime=new Date(S.gsync).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('stext').textContent='Synced '+ltime;
+    const gl=document.getElementById('glists');
+    if(!gl)return;
+    gl.innerHTML=lists.map(l=>{
+      const lt=S.tasks.filter(t=>t.list===l.title&&t.source==='google');
+      return`<div style="margin-bottom:14px">
+        <div style="background:var(--brand-light);color:var(--brand);padding:8px 12px;border-radius:var(--rs);font-size:13px;font-weight:600;margin-bottom:6px">${l.title} <span style="font-size:11px;opacity:.7">(${lt.length})</span></div>
+        ${lt.map(tHTML).join('')||'<div style="font-size:12px;color:var(--text3);padding:6px 10px">No tasks</div>'}
+      </div>`;
+    }).join('');
+    toast(`Synced ${S.tasks.filter(t=>t.source==='google').length} tasks`);
+  }catch(e){toast('Sync failed. Check connection.');}
+}
+
+// MODALS
+function om(id){
+  if(id==='mTask'){
+    document.getElementById('tDate').value=tod();
+    const s=document.getElementById('tCli');
+    s.innerHTML='<option value="">— None —</option>'+S.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  }
+  if(id==='mClient')document.getElementById('cStart').value=tod();
+  document.getElementById(id).classList.add('open');
+}
+function cm(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mb').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+
+function saveTask(){
+  const t=document.getElementById('tTitle').value.trim();
+  if(!t){toast('Enter a task title');return;}
+  S.tasks.push({id:uid(),title:t,dueDate:document.getElementById('tDate').value||null,dueTime:document.getElementById('tTime').value||null,category:document.getElementById('tCat').value,cliId:document.getElementById('tCli').value||null,completed:false,source:'local'});
+  ss();cm('mTask');document.getElementById('tTitle').value='';toast('Task added');
+  render(document.querySelector('.ni.active').dataset.view);
+}
+
+function saveClient(){
+  const n=document.getElementById('cName').value.trim();
+  if(!n){toast('Enter client name');return;}
+  const pkg=document.getElementById('cPkg').value;
+  const sd=document.getElementById('cStart').value;
+  const mo=pkg?PKG_M[pkg]:0;
+  let ed=null;
+  if(sd&&mo){const d=new Date(sd+'T00:00:00');d.setMonth(d.getMonth()+mo);ed=d.toISOString().split('T')[0];}
+  S.clients.push({id:uid(),name:n,email:document.getElementById('cEmail').value.trim(),phone:document.getElementById('cPhone').value.trim(),package:pkg,stage:document.getElementById('cStage').value,paymentStatus:document.getElementById('cPay').value,totalSessions:PKG_S[pkg]||0,completedSessions:0,packageStartDate:sd||null,packageEndDate:ed,enrollmentChecklist:{},notes:'',nextSession:null});
+  ss();cm('mClient');['cName','cEmail','cPhone'].forEach(id=>document.getElementById(id).value='');
+  toast(n+' added');render(document.querySelector('.ni.active').dataset.view);
+}
+
+// INIT
+rToday();
+const sc=localStorage.getItem('rh_gcid');
+if(sc&&S.gtoken){document.getElementById('sdot').style.background='#4caf50';document.getElementById('stext').textContent='Connected';}
+</script>
+</body>
+</html>
