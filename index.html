@@ -319,58 +319,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- SETUP VIEW -->
     <div class="view" id="view-setup">
-      <div class="setup-grid">
-
-        <!-- Firebase Card -->
-        <div class="setup-card">
-          <div class="setup-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Firebase Realtime Sync
-          </div>
-          <div class="setup-sub">Syncs clients, tasks and schedule between you and Ritu in real time across all devices.</div>
-          <div class="setup-status" id="fbStatus"></div>
-          <div class="steps">
-            <div class="step">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Create project → name it <code>ritu-ops</code></div>
-            <div class="step">Build → Realtime Database → Create database → Start in <strong>test mode</strong></div>
-            <div class="step">Project Settings (gear icon) → Your apps → Add web app → Register → copy the config</div>
-            <div class="step">Paste each config value below and click Save</div>
-          </div>
-          <div style="margin-top:12px">
-            <label class="fl">API Key</label><input class="fi2" id="fb_apiKey" placeholder="AIzaSy..."/>
-            <label class="fl">Auth Domain</label><input class="fi2" id="fb_authDomain" placeholder="ritu-ops.firebaseapp.com"/>
-            <label class="fl">Database URL</label><input class="fi2" id="fb_dbUrl" placeholder="https://ritu-ops-default-rtdb.firebaseio.com"/>
-            <label class="fl">Project ID</label><input class="fi2" id="fb_projectId" placeholder="ritu-ops"/>
-            <button class="btn btn-p btn-sm" onclick="saveFirebaseConfig()" style="margin-top:4px">Save &amp; Connect</button>
-          </div>
-        </div>
-
-        <!-- Google Card -->
-        <div class="setup-card">
-          <div class="setup-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            Google Tasks &amp; Calendar
-          </div>
-          <div class="setup-sub">Pulls your Google Tasks and syncs session slots with Google Calendar automatically.</div>
-          <div class="setup-status" id="gStatus"></div>
-          <div class="steps">
-            <div class="step">Google Cloud Console → your project → Enable <strong>Google Calendar API</strong> (Tasks API should already be enabled)</div>
-            <div class="step">OAuth consent screen → Test users → add <code>chiragds0117@gmail.com</code> and Ritu's Gmail</div>
-            <div class="step">Credentials → your OAuth Client ID → Authorised origins: <code>https://chiraghontec.github.io</code></div>
-            <div class="step">Enter your Client ID below and click Connect</div>
-          </div>
-          <div style="margin-top:12px">
-            <label class="fl">Google OAuth Client ID</label>
-            <input class="fi2" id="gcid" placeholder="xxxxxx.apps.googleusercontent.com"/>
-            <button class="btn btn-p btn-sm" onclick="gConnect()" style="margin-top:4px">Connect Google</button>
-            <button class="btn btn-o btn-sm" onclick="gDisc()" style="margin-top:4px;margin-left:6px">Disconnect</button>
-          </div>
-        </div>
-
-      </div>
-      <!-- Status summary -->
-      <div class="card" style="margin-top:14px">
+      <div class="card">
         <div class="ch"><span class="ct">Connection Status</span></div>
         <div id="connSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+      </div>
+      <div style="margin-top:14px;text-align:right">
+        <button class="btn btn-o btn-sm" onclick="signOut()">Sign out</button>
       </div>
     </div>
 
@@ -485,23 +439,15 @@ let db=null, fbReady=false, calEvents={}, curCli=null;
 // ══════════════════════════════════════════════════════════
 // FIREBASE
 // ══════════════════════════════════════════════════════════
-function saveFirebaseConfig(){
-  const cfg={
-    apiKey:document.getElementById('fb_apiKey').value.trim(),
-    authDomain:document.getElementById('fb_authDomain').value.trim(),
-    databaseURL:document.getElementById('fb_dbUrl').value.trim(),
-    projectId:document.getElementById('fb_projectId').value.trim(),
-  };
-  if(!cfg.apiKey||!cfg.databaseURL){toast('Fill in API Key and Database URL');return;}
-  Object.entries(cfg).forEach(([k,v])=>localStorage.setItem('rh_fb_'+k,v));
-  initFirebase(cfg);
-}
+const FB_CFG={
+  apiKey:'AIzaSyBRfeMc38ruU5SQK56wOVKvIGtlIvuVeII',
+  authDomain:'ritu-ops.firebaseapp.com',
+  databaseURL:'https://ritu-ops-default-rtdb.asia-southeast1.firebasedatabase.app/',
+  projectId:'ritu-ops',
+};
 
 function loadFirebaseConfig(){
-  const k=['apiKey','authDomain','databaseURL','projectId'];
-  const cfg={};
-  k.forEach(key=>{const v=localStorage.getItem('rh_fb_'+key);if(v)cfg[key]=v;});
-  if(cfg.apiKey&&cfg.databaseURL)initFirebase(cfg);
+  if(FB_CFG.apiKey&&FB_CFG.databaseURL)initFirebase(FB_CFG);
 }
 
 function initFirebase(cfg){
@@ -1038,31 +984,6 @@ async function fetchGT(){
 // SETUP VIEW
 // ══════════════════════════════════════════════════════════
 function rSetup(){
-  // Pre-fill saved Firebase config
-  ['apiKey','authDomain','databaseURL','projectId'].forEach(k=>{
-    const v=localStorage.getItem('rh_fb_'+k);
-    const el=document.getElementById('fb_'+k.replace('databaseURL','dbUrl'));
-    if(el&&v)el.value=v;
-  });
-  const gcid=localStorage.getItem('rh_gcid');
-  if(gcid){const el=document.getElementById('gcid');if(el)el.value=gcid;}
-
-  // Firebase status
-  const fbEl=document.getElementById('fbStatus');
-  if(fbEl){
-    if(fbReady){fbEl.className='setup-status ok';fbEl.innerHTML='✓ Connected — live sync active';}
-    else if(localStorage.getItem('rh_fb_apiKey')){fbEl.className='setup-status warn';fbEl.innerHTML='⚠ Config saved — refresh to reconnect';}
-    else{fbEl.className='setup-status err';fbEl.innerHTML='✗ Not configured — fill in details below';}
-  }
-
-  // Google status
-  const gEl=document.getElementById('gStatus');
-  if(gEl){
-    if(S.gtoken){gEl.className='setup-status ok';gEl.innerHTML='✓ Google connected — Tasks & Calendar active';}
-    else if(localStorage.getItem('rh_gcid')){gEl.className='setup-status warn';gEl.innerHTML='⚠ Client ID saved — click Connect to auth';}
-    else{gEl.className='setup-status err';gEl.innerHTML='✗ Not connected — enter Client ID below';}
-  }
-
   updateSetupStatus();
 }
 
@@ -1082,43 +1003,13 @@ function updateSetupStatus(){
 }
 
 // ══════════════════════════════════════════════════════════
-// GOOGLE AUTH
+// SIGN OUT
 // ══════════════════════════════════════════════════════════
-function gConnect(){
-  const cid=document.getElementById('gcid').value.trim()||localStorage.getItem('rh_gcid');
-  if(!cid){toast('Enter your Google Client ID');return;}
-  localStorage.setItem('rh_gcid',cid);
-  gAuth(cid);
-}
-
-function gDisc(){
-  S.gtoken=null;localStorage.removeItem('rh_gcid');ss();
-  setDot('gDot','err');document.getElementById('gText').textContent='Google · Disconnected';
-  rSetup();toast('Google disconnected');
-}
-
-function gAuth(cid){
-  if(!cid)return;
-  function _initTC(){
-    window._tc=google.accounts.oauth2.initTokenClient({
-      client_id:cid,
-      scope:'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
-      callback:(r)=>{
-        if(r.error){toast('Auth error: '+r.error);return;}
-        S.gtoken=r.access_token;ss();
-        setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
-        updateSetupStatus();
-        const v=document.querySelector('.ni.active').dataset.view;if(v==='setup')rSetup();
-        toast('Google connected — Tasks & Calendar active!');
-      }
-    });
-    window._tc.requestAccessToken();
-  }
-  if(_gisLoaded){_initTC();return;}
-  const sc=document.createElement('script');
-  sc.src='https://accounts.google.com/gsi/client';
-  sc.onload=()=>{_gisLoaded=true;_initTC();};
-  document.head.appendChild(sc);
+function signOut(){
+  if(!confirm('Sign out?'))return;
+  sessionStorage.removeItem('rh_auth_email');
+  S.gtoken=null;ss();
+  location.reload();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1189,7 +1080,7 @@ function startGoogleSignIn(){
   function _initAuth(){
     window._authTC=google.accounts.oauth2.initTokenClient({
       client_id:AUTH_CID,
-      scope:'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      scope:'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
       callback:async(r)=>{
         if(r.error){setAuthErr('Sign-in failed: '+r.error);return;}
         try{
@@ -1197,6 +1088,8 @@ function startGoogleSignIn(){
           const info=await res.json();
           if(ALLOWED_EMAILS.includes(info.email)){
             sessionStorage.setItem('rh_auth_email',info.email);
+            S.gtoken=r.access_token;ss();
+            setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
             grantAccess();
           }else{
             setAuthErr('Access denied. '+info.email+' is not authorized.');
@@ -1220,13 +1113,9 @@ function startGoogleSignIn(){
 // ══════════════════════════════════════════════════════════
 checkAuth();
 loadFirebaseConfig();
-rToday();
-const scid=localStorage.getItem('rh_gcid');
-if(scid&&S.gtoken){
-  setDot('gDot','ok');
-  document.getElementById('gText').textContent='Google · Active';
-}
+if(S.gtoken){setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';}
 if(!fbReady){setDot('fbDot','err');document.getElementById('fbText').textContent='Firebase · Not set';}
+rToday();
 </script>
 </body>
 </html>
