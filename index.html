@@ -425,7 +425,7 @@ const ESTEPS=['Package selected','Registration form filled','Payment received','
 const DAYS_K=['tue','wed','thu','fri','sat','sun'];
 const DAYS_L=['Tue','Wed','Thu','Fri','Sat','Sun'];
 const VTITLES={today:'Today',week:'This Week',clients:'Clients',sessions:'Sessions',gtasks:'Google Tasks',setup:'Setup'};
-const ZONE_TIMES={prep:{h:14,m:0,eh:15,em:0},block1:{h:15,m:0,eh:17,em:0},break:{h:17,m:0,eh:18,em:0},block2:{h:18,m:0,eh:20,em:0}};
+const ZONE_TIMES={prep:{h:14,m:0,eh:15,em:0},block1:{h:15,m:0,eh:16,em:30},break:{h:16,m:30,eh:18,em:0},block2:{h:18,m:0,eh:19,em:30}};
 
 // ══════════════════════════════════════════════════════════
 // STATE
@@ -437,8 +437,11 @@ let S=loadLocal();
 let db=null, fbReady=false, calEvents={}, curCli=null;
 
 function seedClients(){
-  if(S.clients.length>0)return;
-  ['Kiran','Aanya','Chandrashekhar','Dhruv','Vikram','Jeet','Karuna','Sutapa','Yamini'].forEach(n=>{
+  const names=['Kiran','Aanya','Chandrashekhar','Dhruv','Vikram','Jeet','Karuna','Sutapa','Yamini'];
+  const existing=new Set(S.clients.map(c=>c.name.trim().toLowerCase()));
+  const missing=names.filter(n=>!existing.has(n.toLowerCase()));
+  if(!missing.length)return;
+  missing.forEach(n=>{
     S.clients.push({id:uid(),name:n,email:'',phone:'',package:'',stage:'active',paymentStatus:'paid',
       totalSessions:0,completedSessions:0,packageStartDate:null,packageEndDate:null,
       enrollmentChecklist:{s0:true,s1:true,s2:true,s3:true,s4:true,s5:true,s6:true},notes:'',nextSession:null});
@@ -586,12 +589,12 @@ async function rToday(){
   const todayCalEvts=calEvents[td]||[];
   document.getElementById('tsess').innerHTML=`
     <div class="sb2 ${s1?s1.type||'session':'empty'}">
-      <div class="sbt">3:00–5:00 PM · Block 1</div>
+      <div class="sbt">3:00–4:30 PM · Block 1 (90 min)</div>
       ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
       ${todayCalEvts.filter(e=>evtMatchesZone(e,'block1')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
     </div>
     <div class="sb2 ${s2?s2.type||'session':'empty'}">
-      <div class="sbt">6:00–8:00 PM · Block 2</div>
+      <div class="sbt">6:00–7:30 PM · Block 2 (90 min)</div>
       ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
       ${todayCalEvts.filter(e=>evtMatchesZone(e,'block2')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
     </div>`;
@@ -654,9 +657,9 @@ async function rWeek(){
 
   const zones=[
     {k:'prep',l:'2:00–3:00 PM · Prep zone',c:'pz'},
-    {k:'block1',l:'3:00–5:00 PM · Session block 1  [ANCHORED]',c:'sz'},
-    {k:'break',l:'5:00–6:00 PM · Break / transition',c:'bz'},
-    {k:'block2',l:'6:00–8:00 PM · Session block 2  [ANCHORED]',c:'sz'},
+    {k:'block1',l:'3:00–4:30 PM · Session block 1  [ANCHORED · 90 min]',c:'sz'},
+    {k:'break',l:'4:30–6:00 PM · Break / transition',c:'bz'},
+    {k:'block2',l:'6:00–7:30 PM · Session block 2  [ANCHORED · 90 min]',c:'sz'},
   ];
 
   let h=`<div class="wgh"><div></div>${days.map((d,i)=>`<div style="${ds[i]===td?'background:rgba(255,255,255,.18)':''}">${DAYS_L[i]}<br><span style="font-size:9px;opacity:.6">${d.getDate()}</span></div>`).join('')}</div><div class="wgb">`;
