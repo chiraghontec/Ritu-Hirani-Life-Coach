@@ -436,6 +436,17 @@ function saveLocal(){localStorage.setItem('rh_ops',JSON.stringify(S));}
 let S=loadLocal();
 let db=null, fbReady=false, calEvents={}, curCli=null;
 
+function seedClients(){
+  if(S.clients.length>0)return;
+  ['Kiran','Aanya','Chandrashekhar','Dhruv','Vikram','Jeet','Karuna','Sutapa','Yamini'].forEach(n=>{
+    S.clients.push({id:uid(),name:n,email:'',phone:'',package:'',stage:'active',paymentStatus:'paid',
+      totalSessions:0,completedSessions:0,packageStartDate:null,packageEndDate:null,
+      enrollmentChecklist:{s0:true,s1:true,s2:true,s3:true,s4:true,s5:true,s6:true},notes:'',nextSession:null});
+  });
+  ss();
+}
+seedClients();
+
 // ══════════════════════════════════════════════════════════
 // FIREBASE
 // ══════════════════════════════════════════════════════════
@@ -542,7 +553,7 @@ function render(v){
 // ══════════════════════════════════════════════════════════
 // TODAY VIEW
 // ══════════════════════════════════════════════════════════
-function rToday(){
+async function rToday(){
   const td=tod();
   const ac=S.clients.filter(c=>c.stage==='active').length;
   const tc=S.tasks.filter(t=>!t.completed&&t.dueDate===td).length;
@@ -559,17 +570,30 @@ function rToday(){
   const tl=document.getElementById('tlist');
   tl.innerHTML=ttasks.length?ttasks.map(tHTML).join(''):`<div class="es">All caught up for today!</div>`;
 
-  const dow=new Date().getDay(),dk=DAYS_K[dow-1]||'';
+  // Fetch today's calendar events
+  if(S.gtoken){
+    try{
+      const start=new Date(td+'T00:00:00+05:30').toISOString();
+      const end=new Date(td+'T23:59:59+05:30').toISOString();
+      await fetchCalendarEvents(start,end,[td]);
+    }catch(e){console.log('Calendar fetch skipped:',e.message);}
+  }
+
+  const dow=new Date().getDay();
+  const dk=dow===0?'sun':dow>=2?DAYS_K[dow-2]:'';
   const ds=dk?(S.schedule[dk]||{}):{};
   const s1=ds.block1,s2=ds.block2;
+  const todayCalEvts=calEvents[td]||[];
   document.getElementById('tsess').innerHTML=`
     <div class="sb2 ${s1?s1.type||'session':'empty'}">
       <div class="sbt">3:00–5:00 PM · Block 1</div>
       ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
+      ${todayCalEvts.filter(e=>evtMatchesZone(e,'block1')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
     </div>
     <div class="sb2 ${s2?s2.type||'session':'empty'}">
       <div class="sbt">6:00–8:00 PM · Block 2</div>
       ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
+      ${todayCalEvts.filter(e=>evtMatchesZone(e,'block2')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
     </div>`;
 
   const acts=[];
@@ -1090,6 +1114,7 @@ function startGoogleSignIn(){
             sessionStorage.setItem('rh_auth_email',info.email);
             S.gtoken=r.access_token;ss();
             setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
+            startCalPoll();
             grantAccess();
           }else{
             setAuthErr('Access denied. '+info.email+' is not authorized.');
@@ -1109,11 +1134,33 @@ function startGoogleSignIn(){
 }
 
 // ══════════════════════════════════════════════════════════
+// CALENDAR REAL-TIME SYNC
+// ══════════════════════════════════════════════════════════
+let _calPoll=null;
+function startCalPoll(){
+  if(_calPoll)clearInterval(_calPoll);
+  if(!S.gtoken)return;
+  _calPoll=setInterval(()=>{
+    if(!S.gtoken)return;
+    const v=document.querySelector('.ni.active')?.dataset.view;
+    if(v==='today')rToday();
+    else if(v==='week')rWeek();
+  },60000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&S.gtoken){
+    const v=document.querySelector('.ni.active')?.dataset.view;
+    if(v==='today')rToday();
+    else if(v==='week')rWeek();
+  }
+});
+
+// ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
 checkAuth();
 loadFirebaseConfig();
-if(S.gtoken){setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';}
+if(S.gtoken){setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';startCalPoll();}
 if(!fbReady){setDot('fbDot','err');document.getElementById('fbText').textContent='Firebase · Not set';}
 rToday();
 </script>
