@@ -7,6 +7,23 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-06
 
+### [pending] Fix week slots bleeding across weeks (date-keyed schedule)
+**Reported by Chirag**
+- **Root cause:** `S.schedule` keyed by day-of-week (`'sat'`, `'fri'`) not ISO date — every Saturday showed the same booked slot regardless of which week was displayed
+- **Fix:** All schedule reads/writes now use ISO date string (`'2026-06-13'`) as key instead of day-of-week abbreviation
+- Affects: week grid render, slot edit modal, save slot, clear slot, today view session blocks
+- Also fixed: "Sessions This Week" stat now counts only current week's dates, not all stored slots
+- **Note:** Any slots saved before this fix used old keys — those need to be re-entered
+
+### [pending] Fix Google Tasks & Calendar "Not connected" after page reload
+**Reported by Chirag**
+- **Root cause:** OAuth access tokens expire in ~1hr; stale token was persisted in localStorage, and on reload `checkAuth()` skipped re-auth (sessionStorage had email), leaving `S.gtoken` null
+- **Fix 1:** `loadLocal()` now clears `gtoken` on every page load — expired tokens no longer silently break API calls
+- **Fix 2:** Added `_requestGoogleToken(cb)` — standalone token-acquisition function reusable for reconnects
+- **Fix 3:** `doSync()` (sidebar Sync button) now calls `_requestGoogleToken` instead of redirecting to Setup when no token — click Sync → Google picker → synced
+- **Fix 4:** `checkAuth()` auto-requests a fresh token on load when user is already authenticated via sessionStorage
+- **Fix 5:** Setup tab now shows a "Connect Google Tasks & Calendar" button when not connected
+
 ### [0203a9c] Blocked time slots — dashboard + Google Calendar detection
 **Requested by Chirag**
 - **New slot type "Personal / Blocked"** — Ritu can select this in the slot editor, enter an event name (e.g. "Coffee with friend"), save; slot turns orange and creates a Google Calendar event (Tangerine color)
