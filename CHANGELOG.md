@@ -7,6 +7,14 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-06
 
+### [pending] Fix week slots bleeding across weeks (date-keyed schedule)
+**Reported by Chirag**
+- **Root cause:** `S.schedule` keyed by day-of-week (`'sat'`, `'fri'`) not ISO date — every Saturday showed the same booked slot regardless of which week was displayed
+- **Fix:** All schedule reads/writes now use ISO date string (`'2026-06-13'`) as key instead of day-of-week abbreviation
+- Affects: week grid render, slot edit modal, save slot, clear slot, today view session blocks
+- Also fixed: "Sessions This Week" stat now counts only current week's dates, not all stored slots
+- **Note:** Any slots saved before this fix used old keys — those need to be re-entered
+
 ### [pending] Fix Google Tasks & Calendar "Not connected" after page reload
 **Reported by Chirag**
 - **Root cause:** OAuth access tokens expire in ~1hr; stale token was persisted in localStorage, and on reload `checkAuth()` skipped re-auth (sessionStorage had email), leaving `S.gtoken` null

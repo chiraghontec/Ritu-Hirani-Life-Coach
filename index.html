@@ -618,7 +618,8 @@ async function rToday(){
   const ac=S.clients.filter(c=>c.stage==='active').length;
   const tc=S.tasks.filter(t=>!t.completed&&t.dueDate===td).length;
   const pp=S.clients.filter(c=>c.paymentStatus==='pending'&&c.stage!=='lead').length;
-  const ws=Object.values(S.schedule).reduce((a,d)=>a+Object.values(d).filter(s=>s&&s.type==='session').length,0);
+  const wds=wkDays(S.woff).map(d=>d.toISOString().split('T')[0]);
+  const ws=wds.reduce((a,d)=>a+Object.values(S.schedule[d]||{}).filter(s=>s&&s.type==='session').length,0);
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="sl">Active Clients</div><div class="sv">${ac}</div><div class="ss">Currently coaching</div></div>
     <div class="stat"><div class="sl">Tasks Today</div><div class="sv">${tc}</div><div class="ss">Due today</div></div>
@@ -639,10 +640,7 @@ async function rToday(){
     }catch(e){console.log('Calendar fetch skipped:',e.message);}
   }
 
-  const dow=new Date().getDay();
-  const dk=dow===0?'sun':dow>=2?DAYS_K[dow-2]:'';
-  const ds=dk?(S.schedule[dk]||{}):{};
-  const s1=ds.block1,s2=ds.block2;
+  const s1=(S.schedule[td]||{}).block1,s2=(S.schedule[td]||{}).block2;
   const todayCalEvts=calEvents[td]||[];
   const b1Ext=getBlockingEvts(td,'block1'),b2Ext=getBlockingEvts(td,'block2');
   const todOwnIds=getAllStoredCalIds();
@@ -727,7 +725,7 @@ async function rWeek(){
     h+=`<div class="wzl ${z.c}" style="border-bottom:1px solid var(--bdr)">${z.l}</div>`;
     h+=`<div class="wtl"></div>`;
     DAYS_K.forEach((dk,di)=>{
-      const sl=(S.schedule[dk]||{})[z.k];
+      const sl=(S.schedule[ds[di]]||{})[z.k];
       const isTd=ds[di]===td;
       const ownIds=getAllStoredCalIds();
       const calEvts=(calEvents[ds[di]]||[]).filter(e=>ownIds.has(e.id)&&evtMatchesZone(e,z.k));
@@ -873,7 +871,7 @@ async function deleteCalendarEvent(eventId){
 let eSlot=null;
 function editSlot(dk,zk,dateStr){
   eSlot={dk,zk,dateStr};
-  const sl=(S.schedule[dk]||{})[zk]||{};
+  const sl=(S.schedule[dateStr]||{})[zk]||{};
   const extBlockWarn=getBlockingEvts(dateStr,zk);
   const cliOpts=S.clients.filter(c=>c.stage==='active').map(c=>`<option value="${c.id}" ${sl.cliId===c.id?'selected':''}>${c.name}</option>`).join('');
   const div=document.createElement('div');
@@ -903,29 +901,29 @@ function editSlot(dk,zk,dateStr){
 
 async function clearSlot(){
   if(!eSlot)return;
-  const{dk,zk}=eSlot;
-  const existing=(S.schedule[dk]||{})[zk];
+  const{zk,dateStr}=eSlot;
+  const existing=(S.schedule[dateStr]||{})[zk];
   if(existing&&existing.calEventId)await deleteCalendarEvent(existing.calEventId);
-  if(!S.schedule[dk])S.schedule[dk]={};
-  delete S.schedule[dk][zk];
+  if(!S.schedule[dateStr])S.schedule[dateStr]={};
+  delete S.schedule[dateStr][zk];
   ss();document.getElementById('mSlot').remove();rWeek();toast('Slot cleared');
 }
 
 async function saveSlot(){
   if(!eSlot)return;
-  const{dk,zk,dateStr}=eSlot;
+  const{zk,dateStr}=eSlot;
   const type=document.getElementById('slType').value;
   const l=document.getElementById('slLabel').value.trim();
   const cid=document.getElementById('slCli').value;
   const p=document.getElementById('slPkg').value.trim();
-  if(!S.schedule[dk])S.schedule[dk]={};
+  if(!S.schedule[dateStr])S.schedule[dateStr]={};
   if(type==='empty'&&!l){
-    const ex=(S.schedule[dk]||{})[zk];
+    const ex=(S.schedule[dateStr]||{})[zk];
     if(ex&&ex.calEventId)await deleteCalendarEvent(ex.calEventId);
-    delete S.schedule[dk][zk];
+    delete S.schedule[dateStr][zk];
   }else{
     const cli=cid?S.clients.find(c=>c.id===cid):null;
-    const existing=(S.schedule[dk]||{})[zk]||{};
+    const existing=(S.schedule[dateStr]||{})[zk]||{};
     const newSlot={type,label:l||(cli?cli.name:type),cliId:cid||null,pkg:p||(cli?cli.package:''),calEventId:existing.calEventId||null};
     // Calendar sync
     if(S.gtoken&&dateStr){
@@ -936,7 +934,7 @@ async function saveSlot(){
         if(evId)newSlot.calEventId=evId;
       }
     }
-    S.schedule[dk][zk]=newSlot;
+    S.schedule[dateStr][zk]=newSlot;
   }
   ss();document.getElementById('mSlot').remove();rWeek();
   toast(S.gtoken?'Slot saved + Calendar event created':'Slot saved');
