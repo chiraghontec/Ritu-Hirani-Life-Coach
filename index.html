@@ -477,7 +477,7 @@ const ZONE_TIMES={prep:{h:14,m:0,eh:15,em:0},block1:{h:15,m:0,eh:16,em:30},break
 // STATE
 // ══════════════════════════════════════════════════════════
 function defaultState(){return{clients:[],tasks:[],schedule:{},gtoken:null,gsync:null,woff:0};}
-function loadLocal(){const s=localStorage.getItem('rh_ops');return s?JSON.parse(s):defaultState();}
+function loadLocal(){const s=localStorage.getItem('rh_ops');const st=s?JSON.parse(s):defaultState();st.gtoken=null;return st;}
 function saveLocal(){localStorage.setItem('rh_ops',JSON.stringify(S));}
 let S=loadLocal();
 let db=null, fbReady=false, calEvents={}, curCli=null;
@@ -1055,8 +1055,31 @@ function rGTasks(){
   }
 }
 
+function _requestGoogleToken(cb){
+  function _init(){
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:AUTH_CID,
+      scope:'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
+      callback:async(r)=>{
+        if(r.error){toast('Google connect failed: '+r.error);return;}
+        S.gtoken=r.access_token;ss();
+        setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
+        startCalPoll();updateSetupStatus();
+        if(cb)cb();
+      }
+    });
+    tc.requestAccessToken({prompt:''});
+  }
+  if(typeof google!=='undefined'&&google.accounts){_init();return;}
+  const sc=document.createElement('script');
+  sc.src='https://accounts.google.com/gsi/client';
+  sc.onload=()=>{_gisLoaded=true;_init();};
+  sc.onerror=()=>toast('Could not load Google. Check connection.');
+  document.head.appendChild(sc);
+}
+
 async function doSync(){
-  if(!S.gtoken){go('setup',document.querySelector('[data-view=setup]'));return;}
+  if(!S.gtoken){_requestGoogleToken(async()=>{toast('Syncing…');await fetchGT();renderCurrent();});return;}
   toast('Syncing…');
   await fetchGT();
   const v=document.querySelector('.ni.active').dataset.view;
@@ -1111,11 +1134,12 @@ function updateSetupStatus(){
     {label:'Google Calendar',ok:!!S.gtoken,sub:S.gtoken?'Events syncing':'Not connected'},
     {label:'Live Sync',ok:fbReady&&!!S.gtoken,sub:fbReady&&S.gtoken?'Fully operational':'Partial — some features offline'},
   ];
+  const hasToken=!!S.gtoken;
   el.innerHTML=items.map(i=>`
     <div style="background:${i.ok?'var(--okb)':'var(--bg)'};border:1px solid ${i.ok?'var(--ok)':'var(--bdr)'};border-radius:var(--rs);padding:12px">
       <div style="font-size:12px;font-weight:600;color:${i.ok?'var(--ok)':'var(--tx2)'};margin-bottom:3px">${i.ok?'✓':'○'} ${i.label}</div>
       <div style="font-size:11px;color:var(--tx3)">${i.sub}</div>
-    </div>`).join('');
+    </div>`).join('')+(!hasToken?`<button class="btn btn-p" style="margin-top:12px;width:100%" onclick="_requestGoogleToken(()=>{doSync();updateSetupStatus()})">Connect Google Tasks & Calendar</button>`:'');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1173,7 +1197,7 @@ let _gisLoaded=false;
 
 function checkAuth(){
   const saved=sessionStorage.getItem('rh_auth_email');
-  if(saved&&ALLOWED_EMAILS.includes(saved)){grantAccess();return;}
+  if(saved&&ALLOWED_EMAILS.includes(saved)){grantAccess();if(!S.gtoken)_requestGoogleToken(null);return;}
   // overlay already visible by default
 }
 
