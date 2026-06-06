@@ -7,7 +7,7 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-06
 
-### [pending] Blocked time slots — dashboard + Google Calendar detection
+### [0203a9c] Blocked time slots — dashboard + Google Calendar detection
 **Requested by Chirag**
 - **New slot type "Personal / Blocked"** — Ritu can select this in the slot editor, enter an event name (e.g. "Coffee with friend"), save; slot turns orange and creates a Google Calendar event (Tangerine color)
 - **External calendar detection** — any timed Google Calendar event Ritu creates directly (not via dashboard) that overlaps an office-hours zone (prep/block1/break/block2) is shown as orange 🔒 Blocked in the week grid automatically on sync
