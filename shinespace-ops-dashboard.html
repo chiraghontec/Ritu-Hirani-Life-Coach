@@ -139,6 +139,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bln{font-weight:600;line-height:1.3}.blp{font-size:10px;opacity:.75;margin-top:1px}
 .cal-ev{font-size:10px;background:#E8F5E9;color:#2E7D32;border-radius:3px;padding:2px 5px;margin-top:3px;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-ev-dot{width:5px;height:5px;border-radius:50%;background:#4caf50;flex-shrink:0}
+.bl2.blocked{background:#FFF3E0;color:#E65100;border:1.5px solid #FFCC80}
+.cal-block{font-size:10px;background:#FFF3E0;color:#E65100;border-radius:3px;padding:2px 5px;margin-top:3px;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-block-dot{width:5px;height:5px;border-radius:50%;background:#E65100;flex-shrink:0}
 
 /* SETUP VIEW */
 .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -641,17 +644,18 @@ async function rToday(){
   const ds=dk?(S.schedule[dk]||{}):{};
   const s1=ds.block1,s2=ds.block2;
   const todayCalEvts=calEvents[td]||[];
-  document.getElementById('tsess').innerHTML=`
-    <div class="sb2 ${s1?s1.type||'session':'empty'}">
-      <div class="sbt">3:00–4:30 PM · Block 1 (90 min)</div>
-      ${s1?`<div class="sbn">${s1.label}</div><div class="sbp">${s1.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
-      ${todayCalEvts.filter(e=>evtMatchesZone(e,'block1')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
-    </div>
-    <div class="sb2 ${s2?s2.type||'session':'empty'}">
-      <div class="sbt">6:00–7:30 PM · Block 2 (90 min)</div>
-      ${s2?`<div class="sbn">${s2.label}</div><div class="sbp">${s2.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}
-      ${todayCalEvts.filter(e=>evtMatchesZone(e,'block2')).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('')}
-    </div>`;
+  const b1Ext=getBlockingEvts(td,'block1'),b2Ext=getBlockingEvts(td,'block2');
+  const todOwnIds=getAllStoredCalIds();
+  function todayBlockHTML(sbt,sl,extBlocks,zk){
+    const extWarn=extBlocks.map(e=>`<div class="cal-block"><span class="cal-block-dot"></span>⚠ ${e.summary||'External event'}</div>`).join('');
+    if(sl&&sl.type==='blocked')return`<div class="sb2" style="background:#FFF3E0;border-left:3px solid #E65100"><div class="sbt">${sbt}</div><div class="sbn" style="color:#E65100">🔒 ${sl.label||'Blocked'}</div></div>`;
+    if(!sl&&extBlocks.length>0)return`<div class="sb2" style="background:#FFF3E0;border-left:3px solid #E65100"><div class="sbt">${sbt}</div><div class="sbn" style="color:#E65100">🔒 ${extBlocks[0].summary||'Personal event'}</div></div>`;
+    const ownBadges=todayCalEvts.filter(e=>todOwnIds.has(e.id)&&evtMatchesZone(e,zk)).map(e=>`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`).join('');
+    return`<div class="sb2 ${sl?sl.type||'session':'empty'}"><div class="sbt">${sbt}</div>${sl?`<div class="sbn">${sl.label}</div><div class="sbp">${sl.pkg||''}</div>`:`<div class="sbp" style="color:var(--tx3)">No session scheduled</div>`}${extWarn}${ownBadges}</div>`;
+  }
+  document.getElementById('tsess').innerHTML=
+    todayBlockHTML('3:00–4:30 PM · Block 1 (90 min)',s1,b1Ext,'block1')+
+    todayBlockHTML('6:00–7:30 PM · Block 2 (90 min)',s2,b2Ext,'block2');
 
   const acts=[];
   S.clients.forEach(c=>{
@@ -725,16 +729,24 @@ async function rWeek(){
     DAYS_K.forEach((dk,di)=>{
       const sl=(S.schedule[dk]||{})[z.k];
       const isTd=ds[di]===td;
-      const calEvts=(calEvents[ds[di]]||[]).filter(e=>evtMatchesZone(e,z.k));
+      const ownIds=getAllStoredCalIds();
+      const calEvts=(calEvents[ds[di]]||[]).filter(e=>ownIds.has(e.id)&&evtMatchesZone(e,z.k));
+      const extBlocks=getBlockingEvts(ds[di],z.k);
+      const slotIsBlocked=sl&&sl.type==='blocked';
       h+=`<div class="ws" style="${isTd?'background:var(--bl)':''}" onclick="editSlot('${dk}','${z.k}','${ds[di]}')">`;
-      if(sl&&sl.label){
+      if(slotIsBlocked){
+        h+=`<div class="bl2 blocked"><div class="bln">🔒 ${sl.label||'Blocked'}</div></div>`;
+      }else if(extBlocks.length>0&&(!sl||!sl.label)){
+        const bLabel=extBlocks[0].summary||'Personal event';
+        h+=`<div class="bl2 blocked"><div class="bln">🔒 ${bLabel}</div>${extBlocks.length>1?`<div class="blp">+${extBlocks.length-1} more</div>`:''}</div>`;
+      }else if(sl&&sl.label){
         h+=`<div class="bl2 ${sl.type||'session'}"><div class="bln">${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}</div>`;
+        extBlocks.forEach(e=>{h+=`<div class="cal-block"><span class="cal-block-dot"></span>⚠ ${e.summary||'External event'}</div>`;});
       }else if(z.k==='block1'||z.k==='block2'){
         h+=`<div class="bl2 session" style="opacity:.25;border:1.5px dashed #7F77DD;background:transparent"><div class="bln" style="color:#7F77DD">+ Session</div></div>`;
       }else{
         h+=`<div class="bl2 empty">+</div>`;
       }
-      // Show calendar events for this slot
       calEvts.forEach(e=>{
         h+=`<div class="cal-ev"><span class="cal-ev-dot"></span>${e.summary||'Calendar event'}</div>`;
       });
@@ -767,6 +779,25 @@ function evtMatchesZone(evt,zoneKey){
   if(!zt)return false;
   return h===zt.h&&m===zt.m;
 }
+function getAllStoredCalIds(){
+  const ids=new Set();
+  Object.values(S.schedule).forEach(day=>Object.values(day).forEach(sl=>{if(sl&&sl.calEventId)ids.add(sl.calEventId);}));
+  return ids;
+}
+function evtOverlapsZone(evt,zoneKey){
+  if(!evt.start||!evt.start.dateTime)return false;
+  const zt=ZONE_TIMES[zoneKey];if(!zt)return false;
+  const evStart=new Date(evt.start.dateTime);
+  const evEnd=new Date((evt.end&&evt.end.dateTime)||evt.start.dateTime);
+  const d=evt.start.dateTime.split('T')[0];
+  const zStart=new Date(`${d}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00+05:30`);
+  const zEnd=new Date(`${d}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00+05:30`);
+  return evStart<zEnd&&evEnd>zStart;
+}
+function getBlockingEvts(dateStr,zoneKey){
+  const ownIds=getAllStoredCalIds();
+  return(calEvents[dateStr]||[]).filter(e=>!ownIds.has(e.id)&&evtOverlapsZone(e,zoneKey));
+}
 
 async function fetchCalendarEvents(timeMin,timeMax,dateStrs){
   if(!S.gtoken)return;
@@ -792,11 +823,11 @@ async function createCalendarEvent(slot,dateStr,zoneKey){
   const startISO=`${dateStr}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00`;
   const endISO=`${dateStr}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00`;
   const event={
-    summary: slot.type==='session'?`Session · ${slot.label}`:`${slot.type?slot.type.charAt(0).toUpperCase()+slot.type.slice(1):''} · ${slot.label}`,
+    summary: slot.type==='session'?`Session · ${slot.label}`:slot.type==='blocked'?slot.label:`${slot.type?slot.type.charAt(0).toUpperCase()+slot.type.slice(1):''} · ${slot.label}`,
     description: slot.pkg?`Package: ${slot.pkg}`:'',
     start:{dateTime:startISO,timeZone:'Asia/Kolkata'},
     end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
-    colorId: slot.type==='session'?'9':slot.type==='consultation'?'1':slot.type==='content'?'5':'7',
+    colorId: slot.type==='session'?'9':slot.type==='consultation'?'1':slot.type==='content'?'5':slot.type==='blocked'?'6':'7',
   };
   try{
     const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
@@ -843,6 +874,7 @@ let eSlot=null;
 function editSlot(dk,zk,dateStr){
   eSlot={dk,zk,dateStr};
   const sl=(S.schedule[dk]||{})[zk]||{};
+  const extBlockWarn=getBlockingEvts(dateStr,zk);
   const cliOpts=S.clients.filter(c=>c.stage==='active').map(c=>`<option value="${c.id}" ${sl.cliId===c.id?'selected':''}>${c.name}</option>`).join('');
   const div=document.createElement('div');
   div.className='mb open';div.id='mSlot';
@@ -851,11 +883,13 @@ function editSlot(dk,zk,dateStr){
     <div class="fg"><label class="fl">Block Type</label>
       <select class="fi" id="slType">
         ${['session','consultation','content','admin','corporate','break'].map(t=>`<option value="${t}" ${sl.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+        <option value="blocked" ${sl.type==='blocked'?'selected':''}>Personal / Blocked</option>
         <option value="empty" ${!sl.label?'selected':''}>— Clear —</option>
       </select></div>
-    <div class="fg"><label class="fl">Label / Client Name</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
+    <div class="fg"><label class="fl">Label / Event Name</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
     <div class="fg"><label class="fl">Client (active clients)</label><select class="fi" id="slCli"><option value="">— None —</option>${cliOpts}</select></div>
     <div class="fg"><label class="fl">Package / Notes</label><input class="fi" id="slPkg" value="${sl.pkg||''}"/></div>
+    ${extBlockWarn.length>0&&sl.type!=='blocked'?`<div style="background:#FFF3E0;color:#E65100;border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:8px">⚠ Ritu has an external calendar event here: "${extBlockWarn[0].summary||'Personal event'}". Scheduling a session may conflict.</div>`:''}
     ${S.gtoken?`<div style="font-size:11px;color:var(--ok);margin-bottom:8px">✓ Will sync to Google Calendar automatically</div>`:'<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Connect Google to sync with Calendar</div>'}
     <div class="ma">
       <button class="btn btn-o" style="color:var(--dg);border-color:var(--dg)" onclick="clearSlot()">Clear</button>

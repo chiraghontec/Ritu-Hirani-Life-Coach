@@ -7,6 +7,16 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-06
 
+### [pending] Blocked time slots — dashboard + Google Calendar detection
+**Requested by Chirag**
+- **New slot type "Personal / Blocked"** — Ritu can select this in the slot editor, enter an event name (e.g. "Coffee with friend"), save; slot turns orange and creates a Google Calendar event (Tangerine color)
+- **External calendar detection** — any timed Google Calendar event Ritu creates directly (not via dashboard) that overlaps an office-hours zone (prep/block1/break/block2) is shown as orange 🔒 Blocked in the week grid automatically on sync
+- **Conflict warning** — if a session is already scheduled in a slot that has an external calendar block, an orange ⚠ conflict badge appears below it
+- **Slot edit modal warning** — opening a slot with an external calendar conflict shows an orange warning message
+- **Today view** — both session blocks in Today view also show orange blocked state when relevant
+- All-day events (birthdays, reminders) are intentionally ignored — only timed events block slots
+- Dashboard-created session/consultation events are never treated as blocks (distinguished by stored `calEventId`)
+
 ### [173411e] Sessions progress bar + Task description + New categories
 **Requested by Chirag**
 - **Clients view** — Active clients now show a Sessions progress bar (purple, X/Y format) below the Enrollment bar, matching the same visual style
