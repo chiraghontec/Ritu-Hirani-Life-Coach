@@ -858,9 +858,12 @@ async function createCalendarEvent(slot,dateStr,zoneKey){
     colorId: slot.type==='session'?'9':slot.type==='consultation'?'1':slot.type==='content'?'5':slot.type==='blocked'?'6':'7',
     reminders:{useDefault:false,overrides:[{method:'email',minutes:2880},{method:'popup',minutes:480},{method:'popup',minutes:120}]},
   };
+  const cliEmail1=slot.cliId?(S.clients.find(c=>c.id===slot.cliId)||{}).email||'':'';
+  const attendees=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
+  if(cliEmail1)attendees.push({email:cliEmail1});
+  event.attendees=attendees;
   if(slot.sessionMode==='online'){
     event.conferenceData={createRequest:{requestId:`meet-${dateStr}-${Date.now()}`,conferenceSolutionKey:{type:'hangoutsMeet'}}};
-    event.attendees=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
   }
   if(slot.sessionMode==='offline'){event.location='https://maps.app.goo.gl/HhdT3tNkD2VX2S7B6';}
   const url='https://www.googleapis.com/calendar/v3/calendars/primary/events'+(slot.sessionMode==='online'?'?conferenceDataVersion=1':'');
@@ -888,9 +891,12 @@ async function updateCalendarEvent(eventId,slot,dateStr,zoneKey){
     end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
     reminders:{useDefault:false,overrides:[{method:'email',minutes:2880},{method:'popup',minutes:480},{method:'popup',minutes:120}]},
   };
+  const cliEmail2=slot.cliId?(S.clients.find(c=>c.id===slot.cliId)||{}).email||'':'';
+  const attendees2=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
+  if(cliEmail2)attendees2.push({email:cliEmail2});
+  event.attendees=attendees2;
   if(slot.sessionMode==='online'){
     event.conferenceData={createRequest:{requestId:`meet-upd-${eventId.slice(-6)}-${Date.now()}`,conferenceSolutionKey:{type:'hangoutsMeet'}}};
-    event.attendees=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
   }
   if(slot.sessionMode==='offline'){event.location='https://maps.app.goo.gl/HhdT3tNkD2VX2S7B6';}
   const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`+(slot.sessionMode==='online'?'?conferenceDataVersion=1':'');

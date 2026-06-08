@@ -7,6 +7,11 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-08
 
+### [pending] Add client + Ritu emails as attendees on all calendar events
+**Requested by Chirag**
+- All calendar events now include `rituhirani02@gmail.com`, `counselorsdesk05@gmail.com`, and the booked client's email as attendees — applies to both Online and Offline sessions
+- Client email pulled from client record via `slot.cliId`; skipped silently if client has no email set
+
 ### [pending] Fix: sessions showing on wrong day (off-by-one date bug)
 **Reported by Chirag**
 - **Root cause:** `toISOString().split('T')[0]` converts local midnight to UTC before extracting the date. In IST (UTC+5:30), midnight June 16 local = June 15 18:30 UTC → date key `2026-06-15` instead of `2026-06-16`. Every week-grid date slot was one day behind.
