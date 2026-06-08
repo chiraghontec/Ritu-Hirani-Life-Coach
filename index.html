@@ -481,6 +481,7 @@ function loadLocal(){const s=localStorage.getItem('rh_ops');const st=s?JSON.pars
 function saveLocal(){localStorage.setItem('rh_ops',JSON.stringify(S));}
 let S=loadLocal();
 let db=null, fbReady=false, calEvents={}, curCli=null;
+let gtListMap={}, gtDefaultListId='@default';
 
 function seedClients(){
   const names=['Kiran','Aanya','Chandrashekhar','Dhruv','Vikram','Jeet','Karuna','Sutapa','Yamini'];
@@ -689,8 +690,19 @@ function tHTML(t){
   </div>`;
 }
 
-function tog(id){const t=S.tasks.find(x=>x.id===id);if(t){t.completed=!t.completed;ss();render(document.querySelector('.ni.active').dataset.view)}}
-function delT(id){S.tasks=S.tasks.filter(t=>t.id!==id);ss();render(document.querySelector('.ni.active').dataset.view);toast('Removed')}
+async function tog(id){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  t.completed=!t.completed;ss();render(document.querySelector('.ni.active').dataset.view);
+  if(S.gtoken&&t.gid){
+    if(t.completed)await gtPatch(t,{status:'completed',completed:new Date().toISOString()});
+    else await gtPatch(t,{status:'needsAction',completed:null});
+  }
+}
+async function delT(id){
+  const t=S.tasks.find(x=>x.id===id);
+  if(t&&S.gtoken&&t.gid)await gtDelete(t);
+  S.tasks=S.tasks.filter(x=>x.id!==id);ss();render(document.querySelector('.ni.active').dataset.view);toast('Removed');
+}
 
 // ══════════════════════════════════════════════════════════
 // WEEK VIEW
@@ -1093,12 +1105,18 @@ async function fetchGT(){
     if(!lr.ok){if(lr.status===401){S.gtoken=null;ss();setDot('gDot','err');document.getElementById('gText').textContent='Google · Expired';}return;}
     const ld=await lr.json();
     const lists=ld.items||[];
+    gtListMap={};
+    lists.forEach(l=>{gtListMap[l.id]=l.title;});
+    if(lists.length)gtDefaultListId=lists[0].id;
     for(const l of lists){
       const tr=await fetch(`https://www.googleapis.com/tasks/v1/lists/${l.id}/tasks?showCompleted=false&maxResults=50`,{headers:{Authorization:'Bearer '+S.gtoken}});
       const td=await tr.json();
       (td.items||[]).filter(t=>t.title).forEach(gt=>{
-        if(!S.tasks.find(t=>t.gid===gt.id)){
-          S.tasks.push({id:uid(),gid:gt.id,title:gt.title,dueDate:gt.due?gt.due.split('T')[0]:null,completed:gt.status==='completed',category:'admin',source:'google',list:l.title});
+        const ex=S.tasks.find(t=>t.gid===gt.id);
+        if(!ex){
+          S.tasks.push({id:uid(),gid:gt.id,glid:l.id,title:gt.title,dueDate:gt.due?gt.due.split('T')[0]:null,completed:false,category:'admin',source:'google',list:l.title});
+        }else if(!ex.glid){
+          ex.glid=l.id;
         }
       });
     }
@@ -1115,6 +1133,46 @@ async function fetchGT(){
     }).join('');
     toast(`Synced ${S.tasks.filter(t=>t.source==='google').length} Google Tasks`);
   }catch(e){toast('Sync failed. Check connection.');}
+}
+
+// ══════════════════════════════════════════════════════════
+// GOOGLE TASKS WRITE (two-way sync)
+// ══════════════════════════════════════════════════════════
+async function gtCreate(task){
+  if(!S.gtoken)return null;
+  const body={title:task.title};
+  if(task.description)body.notes=task.description;
+  if(task.dueDate)body.due=task.dueDate+'T00:00:00.000Z';
+  try{
+    const r=await fetch(`https://www.googleapis.com/tasks/v1/lists/${gtDefaultListId}/tasks`,{
+      method:'POST',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!r.ok)return null;
+    return await r.json();
+  }catch(e){console.error('GT create:',e);return null;}
+}
+
+async function gtPatch(task,updates){
+  if(!S.gtoken||!task.gid)return;
+  const lid=task.glid||gtDefaultListId;
+  try{
+    await fetch(`https://www.googleapis.com/tasks/v1/lists/${lid}/tasks/${task.gid}`,{
+      method:'PATCH',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
+      body:JSON.stringify(updates)
+    });
+  }catch(e){console.error('GT patch:',e);}
+}
+
+async function gtDelete(task){
+  if(!S.gtoken||!task.gid)return;
+  const lid=task.glid||gtDefaultListId;
+  try{
+    await fetch(`https://www.googleapis.com/tasks/v1/lists/${lid}/tasks/${task.gid}`,{
+      method:'DELETE',headers:{Authorization:'Bearer '+S.gtoken}
+    });
+  }catch(e){console.error('GT delete:',e);}
+}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1165,12 +1223,18 @@ function om(id){
 function cm(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.mb').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
 
-function saveTask(){
+async function saveTask(){
   const t=document.getElementById('tTitle').value.trim();
   if(!t){toast('Enter a task title');return;}
-  S.tasks.push({id:uid(),title:t,description:document.getElementById('tDesc').value.trim()||null,dueDate:document.getElementById('tDate').value||null,dueTime:document.getElementById('tTime').value||null,category:document.getElementById('tCat').value,cliId:document.getElementById('tCli').value||null,completed:false,source:'local'});
-  ss();cm('mTask');document.getElementById('tTitle').value='';document.getElementById('tDesc').value='';toast('Task added');
+  const task={id:uid(),title:t,description:document.getElementById('tDesc').value.trim()||null,dueDate:document.getElementById('tDate').value||null,dueTime:document.getElementById('tTime').value||null,category:document.getElementById('tCat').value,cliId:document.getElementById('tCli').value||null,completed:false,source:'local'};
+  S.tasks.push(task);
+  ss();cm('mTask');document.getElementById('tTitle').value='';document.getElementById('tDesc').value='';
+  toast(S.gtoken?'Task added — syncing to Google…':'Task added');
   render(document.querySelector('.ni.active').dataset.view);
+  if(S.gtoken){
+    const gt=await gtCreate(task);
+    if(gt){task.gid=gt.id;task.glid=gtDefaultListId;ss();toast('Task added + synced to Google Tasks');}
+  }
 }
 
 function saveClient(){
