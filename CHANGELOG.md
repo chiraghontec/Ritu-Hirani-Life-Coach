@@ -7,6 +7,11 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-08
 
+### [pending] Fix: sessions showing on wrong day (off-by-one date bug)
+**Reported by Chirag**
+- **Root cause:** `toISOString().split('T')[0]` converts local midnight to UTC before extracting the date. In IST (UTC+5:30), midnight June 16 local = June 15 18:30 UTC → date key `2026-06-15` instead of `2026-06-16`. Every week-grid date slot was one day behind.
+- **Fix:** Added `localISO(d)` helper that uses `getFullYear()`/`getMonth()`/`getDate()` (local time). Replaced all three affected usages: `tod()`, `wds` map (today view), `ds` map (week grid), and package end date calculation.
+
 ### [pending] Calendar scheduling improvements
 **Requested by Chirag**
 - **Flexible time scheduling:** Session slots now have a Start Time (time picker) and Duration (60/90/120/180 min) — no longer locked to Block 1 (3 PM) and Block 2 (6 PM). Custom time + duration stored in slot object; calendar event created at exact chosen time. Week grid shows actual time range (e.g. "4:30 PM – 6:00 PM") on booked slots.

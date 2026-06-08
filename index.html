@@ -571,7 +571,8 @@ function ss(){
 // UTILITIES
 // ══════════════════════════════════════════════════════════
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function tod(){return new Date().toISOString().split('T')[0]}
+function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function tod(){return localISO(new Date());}
 function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
 function fmtDT(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 function dUntil(d){if(!d)return null;const a=new Date(d+'T00:00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
@@ -629,7 +630,7 @@ async function rToday(){
   const ac=S.clients.filter(c=>c.stage==='active').length;
   const tc=S.tasks.filter(t=>!t.completed&&t.dueDate===td).length;
   const pp=S.clients.filter(c=>c.paymentStatus==='pending'&&c.stage!=='lead').length;
-  const wds=wkDays(S.woff).map(d=>d.toISOString().split('T')[0]);
+  const wds=wkDays(S.woff).map(d=>localISO(d));
   const ws=wds.reduce((a,d)=>a+Object.values(S.schedule[d]||{}).filter(s=>s&&s.type==='session').length,0);
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="sl">Active Clients</div><div class="sv">${ac}</div><div class="ss">Currently coaching</div></div>
@@ -723,7 +724,7 @@ async function rWeek(){
   const days=wkDays(S.woff);
   const fmt=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
   document.getElementById('wrange').textContent=`${fmt(days[0])} – ${fmt(days[5])} ${days[0].getFullYear()}`;
-  const td=tod(),ds=days.map(d=>d.toISOString().split('T')[0]);
+  const td=tod(),ds=days.map(d=>localISO(d));
 
   // Fetch calendar events for the week if Google is connected
   if(S.gtoken){
@@ -1311,7 +1312,7 @@ function saveClient(){
   const sd=document.getElementById('cStart').value;
   const mo=pkg?PKG_M[pkg]:0;
   let ed=null;
-  if(sd&&mo){const d=new Date(sd+'T00:00:00');d.setMonth(d.getMonth()+mo);ed=d.toISOString().split('T')[0];}
+  if(sd&&mo){const d=new Date(sd+'T00:00:00');d.setMonth(d.getMonth()+mo);ed=localISO(d);}
   S.clients.push({id:uid(),name:n,email:document.getElementById('cEmail').value.trim(),phone:document.getElementById('cPhone').value.trim(),package:pkg,stage:document.getElementById('cStage').value,paymentStatus:document.getElementById('cPay').value,totalSessions:PKG_S[pkg]||0,completedSessions:0,packageStartDate:sd||null,packageEndDate:ed,enrollmentChecklist:{},notes:'',nextSession:null,mode:document.getElementById('cMode').value});
   ss();cm('mClient');['cName','cEmail','cPhone'].forEach(id=>document.getElementById(id).value='');document.getElementById('cMode').value='';
   toast(n+' added');render(document.querySelector('.ni.active').dataset.view);
