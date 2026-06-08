@@ -1121,6 +1121,13 @@ async function fetchGT(){
         }
       });
     }
+    // Push local tasks that haven't been synced to Google yet
+    const unsynced=S.tasks.filter(t=>!t.gid&&!t.completed);
+    let pushed=0;
+    for(const t of unsynced){
+      const gt=await gtCreate(t);
+      if(gt){t.gid=gt.id;t.glid=gtDefaultListId;pushed++;}
+    }
     ss();
     const ltime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('gText').textContent='Google · '+ltime;
@@ -1132,7 +1139,8 @@ async function fetchGT(){
         ${lt.map(tHTML).join('')||'<div style="font-size:12px;color:var(--tx3);padding:5px 10px">No tasks</div>'}
       </div>`;
     }).join('');
-    toast(`Synced ${S.tasks.filter(t=>t.source==='google').length} Google Tasks`);
+    const pulled=S.tasks.filter(t=>t.source==='google').length;
+    toast(pushed>0?`Synced ↓${pulled} from Google · ↑${pushed} pushed to Google`:`Synced ${pulled} Google Tasks`);
   }catch(e){toast('Sync failed. Check connection.');}
 }
 

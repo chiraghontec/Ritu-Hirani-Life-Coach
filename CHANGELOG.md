@@ -7,6 +7,13 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-08
 
+### [pending] Fix: existing dashboard tasks not appearing in Google Tasks
+**Reported by Chirag**
+- **Root cause:** Tasks created in dashboard before two-way sync had no `gid` — they were never pushed to Google Tasks
+- **Fix:** `fetchGT()` now pushes all local unsynced tasks (no `gid`, not completed) to Google Tasks during every Sync call; stores `gid`+`glid` after push
+- One-time migration happens on first Sync click — all old tasks land in Google Tasks
+- Toast now shows `↓N from Google · ↑N pushed to Google` when push occurs
+
 ### [4c9c222] Two-way Google Tasks sync
 **Requested by Chirag**
 - **Create:** Tasks added in dashboard POST to Google Tasks API — appear in Google Tasks app immediately; `gid` + `glid` stored on task for future ops
