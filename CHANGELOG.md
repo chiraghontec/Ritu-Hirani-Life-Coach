@@ -5,6 +5,27 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ---
 
+## 2026-06-08
+
+### [4c9c222] Two-way Google Tasks sync
+**Requested by Chirag**
+- **Create:** Tasks added in dashboard POST to Google Tasks API — appear in Google Tasks app immediately; `gid` + `glid` stored on task for future ops
+- **Complete/uncomplete:** Toggling a task in dashboard PATCHes `status:'completed'` or `status:'needsAction'` on Google Tasks
+- **Delete:** Deleting a task in dashboard DELETEs it from Google Tasks API
+- **`fetchGT()` updated:** Now stores `glid` (list ID) on each synced task; backfills `glid` on existing tasks; populates `gtDefaultListId` from real first-list ID on sync (`@default` fallback before first sync)
+- New helpers: `gtCreate()`, `gtPatch()`, `gtDelete()`
+- Tasks without `gid` (local-only) are unaffected
+
+### [pending] Fix sign-in button not working
+**Reported by Chirag**
+- **Root cause:** GIS (`accounts.google.com/gsi/client`) was loaded dynamically inside the click handler via `sc.onload` — `requestAccessToken()` called from async callback, outside user gesture call stack → browser silently blocked the OAuth popup
+- **Fix:** GIS script now loaded statically in `<head async>` — ready before any user interaction
+- `startGoogleSignIn()` simplified: calls `initTokenClient` + `requestAccessToken` directly on click (synchronous user gesture chain preserved)
+- `_requestGoogleToken()` (silent re-auth on reload): polls for `google.accounts` readiness at 150ms intervals, 8s timeout — no popup needed so no gesture requirement
+- Removed unused `_gisLoaded` flag
+
+---
+
 ## 2026-06-06
 
 ### [pending] Fix week slots bleeding across weeks (date-keyed schedule)

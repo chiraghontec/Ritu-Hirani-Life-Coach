@@ -6,6 +6,7 @@
 <title>Ritu Hirani | Life Coach — Ops Dashboard</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 :root{
   --brand:#4A235A;--bl:#F3EAF9;--acc:#7F77DD;
@@ -1081,11 +1082,11 @@ function _requestGoogleToken(cb){
     tc.requestAccessToken({prompt:''});
   }
   if(typeof google!=='undefined'&&google.accounts){_init();return;}
-  const sc=document.createElement('script');
-  sc.src='https://accounts.google.com/gsi/client';
-  sc.onload=()=>{_gisLoaded=true;_init();};
-  sc.onerror=()=>toast('Could not load Google. Check connection.');
-  document.head.appendChild(sc);
+  // GIS still loading (page just opened) — poll briefly then init
+  const poll=setInterval(()=>{
+    if(typeof google!=='undefined'&&google.accounts){clearInterval(poll);_init();}
+  },150);
+  setTimeout(()=>clearInterval(poll),8000);
 }
 
 async function doSync(){
@@ -1255,7 +1256,6 @@ function saveClient(){
 // ══════════════════════════════════════════════════════════
 const ALLOWED_EMAILS=['team.rituhirani@gmail.com','lifecoach.rituhirani@gmail.com','counselorsdesk05@gmail.com'];
 const AUTH_CID='572717103960-a1ibp9q8cdqlc6tptg6lu5htm4p2nfjj.apps.googleusercontent.com';
-let _gisLoaded=false;
 
 function checkAuth(){
   const saved=sessionStorage.getItem('rh_auth_email');
@@ -1279,36 +1279,32 @@ function startGoogleSignIn(){
   if(btn){btn.disabled=true;btn.textContent='Signing in…';}
   document.getElementById('authErr').textContent='';
 
-  function _initAuth(){
-    window._authTC=google.accounts.oauth2.initTokenClient({
-      client_id:AUTH_CID,
-      scope:'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
-      callback:async(r)=>{
-        if(r.error){setAuthErr('Sign-in failed: '+r.error);return;}
-        try{
-          const res=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:'Bearer '+r.access_token}});
-          const info=await res.json();
-          if(ALLOWED_EMAILS.includes(info.email)){
-            sessionStorage.setItem('rh_auth_email',info.email);
-            S.gtoken=r.access_token;ss();
-            setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
-            startCalPoll();
-            grantAccess();
-          }else{
-            setAuthErr('Access denied. '+info.email+' is not authorized.');
-          }
-        }catch(e){setAuthErr('Could not verify account. Try again.');}
-      }
-    });
-    window._authTC.requestAccessToken();
+  if(typeof google==='undefined'||!google.accounts){
+    setAuthErr('Still loading — try again in a moment.');
+    return;
   }
 
-  if(_gisLoaded){_initAuth();return;}
-  const sc=document.createElement('script');
-  sc.src='https://accounts.google.com/gsi/client';
-  sc.onload=()=>{_gisLoaded=true;_initAuth();};
-  sc.onerror=()=>setAuthErr('Failed to load Google Sign-In. Check connection.');
-  document.head.appendChild(sc);
+  window._authTC=google.accounts.oauth2.initTokenClient({
+    client_id:AUTH_CID,
+    scope:'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/calendar.events',
+    callback:async(r)=>{
+      if(r.error){setAuthErr('Sign-in failed: '+r.error);return;}
+      try{
+        const res=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:'Bearer '+r.access_token}});
+        const info=await res.json();
+        if(ALLOWED_EMAILS.includes(info.email)){
+          sessionStorage.setItem('rh_auth_email',info.email);
+          S.gtoken=r.access_token;ss();
+          setDot('gDot','ok');document.getElementById('gText').textContent='Google · Active';
+          startCalPoll();
+          grantAccess();
+        }else{
+          setAuthErr('Access denied. '+info.email+' is not authorized.');
+        }
+      }catch(e){setAuthErr('Could not verify account. Try again.');}
+    }
+  });
+  window._authTC.requestAccessToken();
 }
 
 // ══════════════════════════════════════════════════════════
