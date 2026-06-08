@@ -16,7 +16,12 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 - New helpers: `gtCreate()`, `gtPatch()`, `gtDelete()`
 - Tasks without `gid` (local-only) are unaffected
 
-### [pending] Fix sign-in button not working
+### [pending] Fix startGoogleSignIn ReferenceError — stray brace caused JS parse failure
+**Reported by Chirag**
+- **Root cause:** Extra `}` after `gtDelete()` function body (introduced when adding two-way sync helpers) — JS parse error crashed entire script block, making all functions undefined including `startGoogleSignIn`
+- **Fix:** Removed stray brace; verified clean syntax with `node --check`
+
+### [0d97eaf] Fix sign-in button not working
 **Reported by Chirag**
 - **Root cause:** GIS (`accounts.google.com/gsi/client`) was loaded dynamically inside the click handler via `sc.onload` — `requestAccessToken()` called from async callback, outside user gesture call stack → browser silently blocked the OAuth popup
 - **Fix:** GIS script now loaded statically in `<head async>` — ready before any user interaction
