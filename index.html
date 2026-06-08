@@ -439,6 +439,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="fg"><label class="fl">Start Date</label><input class="fi" type="date" id="cStart"/></div>
     </div>
+    <div class="fg"><label class="fl">Session Mode</label>
+      <select class="fi" id="cMode">
+        <option value="">— Select —</option>
+        <option value="online">Online (Google Meet)</option>
+        <option value="offline">Offline (Bangalore)</option>
+      </select>
+    </div>
     <div class="ma">
       <button class="btn btn-o" onclick="cm('mClient')">Cancel</button>
       <button class="btn btn-p" onclick="saveClient()">Add Client</button>
@@ -492,7 +499,7 @@ function seedClients(){
   missing.forEach(n=>{
     S.clients.push({id:uid(),name:n,email:'',phone:'',package:'',stage:'active',paymentStatus:'paid',
       totalSessions:0,completedSessions:0,packageStartDate:null,packageEndDate:null,
-      enrollmentChecklist:{s0:true,s1:true,s2:true,s3:true,s4:true,s5:true,s6:true},notes:'',nextSession:null});
+      enrollmentChecklist:{s0:true,s1:true,s2:true,s3:true,s4:true,s5:true,s6:true},notes:'',nextSession:null,mode:''});
   });
   ss();
 }
@@ -569,6 +576,8 @@ function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateSt
 function fmtDT(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 function dUntil(d){if(!d)return null;const a=new Date(d+'T00:00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
 function inits(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function fmtT(startTime,duration){const[sh,sm]=startTime.split(':').map(Number);const tot=sh*60+sm+(duration||90);const eh=Math.floor(tot/60)%24,em=tot%60;const f=(h,m)=>{const ap=h>=12?'PM':'AM';return`${h%12||12}:${String(m).padStart(2,'0')} ${ap}`;};return`${f(sh,sm)} – ${f(eh,em)}`;}
+function onCliChange(val){const cli=S.clients.find(c=>c.id===val);const el=document.getElementById('slotMode');if(el&&cli&&cli.mode)el.value=cli.mode;}
 function setDot(id,state){const d=document.getElementById(id);if(!d)return;d.classList.remove('ok','warn','err');if(state)d.classList.add(state);}
 function toast(m,d=2800){const t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);}
 function renderCurrent(){const v=document.querySelector('.ni.active');if(v)render(v.dataset.view);}
@@ -751,7 +760,9 @@ async function rWeek(){
         const bLabel=extBlocks[0].summary||'Personal event';
         h+=`<div class="bl2 blocked"><div class="bln">🔒 ${bLabel}</div>${extBlocks.length>1?`<div class="blp">+${extBlocks.length-1} more</div>`:''}</div>`;
       }else if(sl&&sl.label){
-        h+=`<div class="bl2 ${sl.type||'session'}"><div class="bln">${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}</div>`;
+        const modeIcon=sl.sessionMode==='online'?'📹 ':sl.sessionMode==='offline'?'📍 ':'';
+        const timeStr=sl.startTime?`<div class="blp">${fmtT(sl.startTime,sl.duration||90)}</div>`:'';
+        h+=`<div class="bl2 ${sl.type||'session'}"><div class="bln">${modeIcon}${sl.label}</div>${sl.pkg?`<div class="blp">${sl.pkg}</div>`:''}${timeStr}</div>`;
         extBlocks.forEach(e=>{h+=`<div class="cal-block"><span class="cal-block-dot"></span>⚠ ${e.summary||'External event'}</div>`;});
       }else if(z.k==='block1'||z.k==='block2'){
         h+=`<div class="bl2 session" style="opacity:.25;border:1.5px dashed #7F77DD;background:transparent"><div class="bln" style="color:#7F77DD">+ Session</div></div>`;
@@ -830,21 +841,30 @@ async function fetchCalendarEvents(timeMin,timeMax,dateStrs){
 
 async function createCalendarEvent(slot,dateStr,zoneKey){
   if(!S.gtoken||!slot||!slot.label)return null;
-  const zt=ZONE_TIMES[zoneKey];if(!zt)return null;
-  const startISO=`${dateStr}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00`;
-  const endISO=`${dateStr}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00`;
+  let sh,sm;
+  if(slot.startTime){[sh,sm]=slot.startTime.split(':').map(Number);}
+  else{const zt=ZONE_TIMES[zoneKey];if(!zt)return null;sh=zt.h;sm=zt.m;}
+  const dur=slot.duration||90;
+  const tot=sh*60+sm+dur;
+  const eh=Math.floor(tot/60)%24,em=tot%60;
+  const startISO=`${dateStr}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:00`;
+  const endISO=`${dateStr}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:00`;
   const event={
     summary: slot.type==='session'?`Session · ${slot.label}`:slot.type==='blocked'?slot.label:`${slot.type?slot.type.charAt(0).toUpperCase()+slot.type.slice(1):''} · ${slot.label}`,
     description: slot.pkg?`Package: ${slot.pkg}`:'',
     start:{dateTime:startISO,timeZone:'Asia/Kolkata'},
     end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
     colorId: slot.type==='session'?'9':slot.type==='consultation'?'1':slot.type==='content'?'5':slot.type==='blocked'?'6':'7',
+    reminders:{useDefault:false,overrides:[{method:'email',minutes:2880},{method:'popup',minutes:480},{method:'popup',minutes:120}]},
   };
+  if(slot.sessionMode==='online'){
+    event.conferenceData={createRequest:{requestId:`meet-${dateStr}-${Date.now()}`,conferenceSolutionKey:{type:'hangoutsMeet'}}};
+    event.attendees=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
+  }
+  if(slot.sessionMode==='offline'){event.location='https://maps.app.goo.gl/HhdT3tNkD2VX2S7B6';}
+  const url='https://www.googleapis.com/calendar/v3/calendars/primary/events'+(slot.sessionMode==='online'?'?conferenceDataVersion=1':'');
   try{
-    const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
-      method:'POST',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
-      body:JSON.stringify(event)
-    });
+    const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},body:JSON.stringify(event)});
     const d=await r.json();
     return d.id||null;
   }catch(e){console.error('Calendar create error:',e);return null;}
@@ -852,20 +872,29 @@ async function createCalendarEvent(slot,dateStr,zoneKey){
 
 async function updateCalendarEvent(eventId,slot,dateStr,zoneKey){
   if(!S.gtoken||!eventId)return;
-  const zt=ZONE_TIMES[zoneKey];if(!zt)return;
-  const startISO=`${dateStr}T${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}:00`;
-  const endISO=`${dateStr}T${String(zt.eh).padStart(2,'0')}:${String(zt.em).padStart(2,'0')}:00`;
+  let sh,sm;
+  if(slot.startTime){[sh,sm]=slot.startTime.split(':').map(Number);}
+  else{const zt=ZONE_TIMES[zoneKey];if(!zt)return;sh=zt.h;sm=zt.m;}
+  const dur=slot.duration||90;
+  const tot=sh*60+sm+dur;
+  const eh=Math.floor(tot/60)%24,em=tot%60;
+  const startISO=`${dateStr}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:00`;
+  const endISO=`${dateStr}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:00`;
   const event={
     summary: slot.type==='session'?`Session · ${slot.label}`:`${slot.type||''} · ${slot.label}`,
     description: slot.pkg||'',
     start:{dateTime:startISO,timeZone:'Asia/Kolkata'},
     end:{dateTime:endISO,timeZone:'Asia/Kolkata'},
+    reminders:{useDefault:false,overrides:[{method:'email',minutes:2880},{method:'popup',minutes:480},{method:'popup',minutes:120}]},
   };
+  if(slot.sessionMode==='online'){
+    event.conferenceData={createRequest:{requestId:`meet-upd-${eventId.slice(-6)}-${Date.now()}`,conferenceSolutionKey:{type:'hangoutsMeet'}}};
+    event.attendees=[{email:'rituhirani02@gmail.com'},{email:'counselorsdesk05@gmail.com'}];
+  }
+  if(slot.sessionMode==='offline'){event.location='https://maps.app.goo.gl/HhdT3tNkD2VX2S7B6';}
+  const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`+(slot.sessionMode==='online'?'?conferenceDataVersion=1':'');
   try{
-    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,{
-      method:'PUT',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},
-      body:JSON.stringify(event)
-    });
+    await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+S.gtoken,'Content-Type':'application/json'},body:JSON.stringify(event)});
   }catch(e){console.error('Calendar update error:',e);}
 }
 
@@ -887,10 +916,14 @@ function editSlot(dk,zk,dateStr){
   const sl=(S.schedule[dateStr]||{})[zk]||{};
   const extBlockWarn=getBlockingEvts(dateStr,zk);
   const cliOpts=S.clients.filter(c=>c.stage==='active').map(c=>`<option value="${c.id}" ${sl.cliId===c.id?'selected':''}>${c.name}</option>`).join('');
+  const zt=ZONE_TIMES[zk]||{h:9,m:0};
+  const defTime=sl.startTime||`${String(zt.h).padStart(2,'0')}:${String(zt.m).padStart(2,'0')}`;
+  const defDur=sl.duration||90;
+  const defMode=sl.sessionMode||(sl.cliId?(S.clients.find(c=>c.id===sl.cliId)||{}).mode||'':'');
   const div=document.createElement('div');
   div.className='mb open';div.id='mSlot';
   div.innerHTML=`<div class="mo">
-    <div class="mt2">Edit Slot · ${DAYS_L[DAYS_K.indexOf(dk)]} · ${zk}</div>
+    <div class="mt2">Edit Slot · ${DAYS_L[DAYS_K.indexOf(dk)]} · ${dateStr}</div>
     <div class="fg"><label class="fl">Block Type</label>
       <select class="fi" id="slType">
         ${['session','consultation','content','admin','corporate','break'].map(t=>`<option value="${t}" ${sl.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
@@ -898,8 +931,26 @@ function editSlot(dk,zk,dateStr){
         <option value="empty" ${!sl.label?'selected':''}>— Clear —</option>
       </select></div>
     <div class="fg"><label class="fl">Label / Event Name</label><input class="fi" id="slLabel" value="${sl.label||''}" placeholder="e.g. Session with Priya"/></div>
-    <div class="fg"><label class="fl">Client (active clients)</label><select class="fi" id="slCli"><option value="">— None —</option>${cliOpts}</select></div>
+    <div class="fg"><label class="fl">Client (active clients)</label><select class="fi" id="slCli" onchange="onCliChange(this.value)"><option value="">— None —</option>${cliOpts}</select></div>
     <div class="fg"><label class="fl">Package / Notes</label><input class="fi" id="slPkg" value="${sl.pkg||''}"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Start Time</label><input class="fi" type="time" id="slotTime" value="${defTime}"/></div>
+      <div class="fg"><label class="fl">Duration</label>
+        <select class="fi" id="slotDuration">
+          <option value="60" ${defDur===60?'selected':''}>60 min</option>
+          <option value="90" ${defDur===90?'selected':''}>90 min</option>
+          <option value="120" ${defDur===120?'selected':''}>120 min</option>
+          <option value="180" ${defDur===180?'selected':''}>180 min</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Session Mode</label>
+        <select class="fi" id="slotMode">
+          <option value="" ${!defMode?'selected':''}>— Select —</option>
+          <option value="online" ${defMode==='online'?'selected':''}>📹 Online (Google Meet)</option>
+          <option value="offline" ${defMode==='offline'?'selected':''}>📍 Offline (Bangalore)</option>
+        </select>
+      </div>
+    </div>
     ${extBlockWarn.length>0&&sl.type!=='blocked'?`<div style="background:#FFF3E0;color:#E65100;border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:8px">⚠ Ritu has an external calendar event here: "${extBlockWarn[0].summary||'Personal event'}". Scheduling a session may conflict.</div>`:''}
     ${S.gtoken?`<div style="font-size:11px;color:var(--ok);margin-bottom:8px">✓ Will sync to Google Calendar automatically</div>`:'<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Connect Google to sync with Calendar</div>'}
     <div class="ma">
@@ -929,6 +980,9 @@ async function saveSlot(){
   const l=document.getElementById('slLabel').value.trim();
   const cid=document.getElementById('slCli').value;
   const p=document.getElementById('slPkg').value.trim();
+  const startTime=document.getElementById('slotTime').value;
+  const duration=parseInt(document.getElementById('slotDuration').value)||90;
+  const sessionMode=document.getElementById('slotMode').value;
   if(!S.schedule[dateStr])S.schedule[dateStr]={};
   if(type==='empty'&&!l){
     const ex=(S.schedule[dateStr]||{})[zk];
@@ -937,7 +991,7 @@ async function saveSlot(){
   }else{
     const cli=cid?S.clients.find(c=>c.id===cid):null;
     const existing=(S.schedule[dateStr]||{})[zk]||{};
-    const newSlot={type,label:l||(cli?cli.name:type),cliId:cid||null,pkg:p||(cli?cli.package:''),calEventId:existing.calEventId||null};
+    const newSlot={type,label:l||(cli?cli.name:type),cliId:cid||null,pkg:p||(cli?cli.package:''),calEventId:existing.calEventId||null,startTime,duration,sessionMode};
     // Calendar sync
     if(S.gtoken&&dateStr){
       if(newSlot.calEventId){
@@ -950,7 +1004,7 @@ async function saveSlot(){
     S.schedule[dateStr][zk]=newSlot;
   }
   ss();document.getElementById('mSlot').remove();rWeek();
-  toast(S.gtoken?'Slot saved + Calendar event created':'Slot saved');
+  toast(S.gtoken?'Slot saved + Calendar event synced':'Slot saved');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -993,6 +1047,11 @@ function openDet(id){
       </select></div>
       <div class="fg"><label class="fl">Stage</label><select class="fi" onchange="upd('${id}','stage',this.value)">
         ${STAGES.map(s=>`<option value="${s}" ${c.stage===s?'selected':''}>${SLABELS[s]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label class="fl">Session Mode</label><select class="fi" onchange="upd('${id}','mode',this.value)">
+        <option value="" ${!c.mode?'selected':''}>— Select —</option>
+        <option value="online" ${c.mode==='online'?'selected':''}>Online</option>
+        <option value="offline" ${c.mode==='offline'?'selected':''}>Offline</option>
       </select></div>
       <div class="fg"><label class="fl">Payment</label><select class="fi" onchange="upd('${id}','paymentStatus',this.value)">
         <option value="paid" ${c.paymentStatus==='paid'?'selected':''}>Paid</option>
@@ -1253,8 +1312,8 @@ function saveClient(){
   const mo=pkg?PKG_M[pkg]:0;
   let ed=null;
   if(sd&&mo){const d=new Date(sd+'T00:00:00');d.setMonth(d.getMonth()+mo);ed=d.toISOString().split('T')[0];}
-  S.clients.push({id:uid(),name:n,email:document.getElementById('cEmail').value.trim(),phone:document.getElementById('cPhone').value.trim(),package:pkg,stage:document.getElementById('cStage').value,paymentStatus:document.getElementById('cPay').value,totalSessions:PKG_S[pkg]||0,completedSessions:0,packageStartDate:sd||null,packageEndDate:ed,enrollmentChecklist:{},notes:'',nextSession:null});
-  ss();cm('mClient');['cName','cEmail','cPhone'].forEach(id=>document.getElementById(id).value='');
+  S.clients.push({id:uid(),name:n,email:document.getElementById('cEmail').value.trim(),phone:document.getElementById('cPhone').value.trim(),package:pkg,stage:document.getElementById('cStage').value,paymentStatus:document.getElementById('cPay').value,totalSessions:PKG_S[pkg]||0,completedSessions:0,packageStartDate:sd||null,packageEndDate:ed,enrollmentChecklist:{},notes:'',nextSession:null,mode:document.getElementById('cMode').value});
+  ss();cm('mClient');['cName','cEmail','cPhone'].forEach(id=>document.getElementById(id).value='');document.getElementById('cMode').value='';
   toast(n+' added');render(document.querySelector('.ni.active').dataset.view);
 }
 

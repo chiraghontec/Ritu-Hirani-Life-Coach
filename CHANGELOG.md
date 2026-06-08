@@ -7,6 +7,17 @@ Repo: https://github.com/chiraghontec/Ritu-Hirani-Life-Coach
 
 ## 2026-06-08
 
+### [pending] Calendar scheduling improvements
+**Requested by Chirag**
+- **Flexible time scheduling:** Session slots now have a Start Time (time picker) and Duration (60/90/120/180 min) — no longer locked to Block 1 (3 PM) and Block 2 (6 PM). Custom time + duration stored in slot object; calendar event created at exact chosen time. Week grid shows actual time range (e.g. "4:30 PM – 6:00 PM") on booked slots.
+- **Online sessions — Google Meet:** When session mode = Online, calendar event auto-creates a Google Meet link (`conferenceData` + `conferenceDataVersion=1`); `rituhirani02@gmail.com` and `counselorsdesk05@gmail.com` added as attendees. Meet icon (📹) shown in week grid cell.
+- **Offline sessions — location:** When session mode = Offline, calendar event sets location to the Bangalore office Google Maps link. Location icon (📍) shown in week grid cell.
+- **3 default reminders on every event:** email 2 days before (2880 min), popup day-of (~8 hrs before, 480 min), popup 2 hours before (120 min) — applied to both create and update.
+- **Client session mode field:** `mode` (online/offline) added to client object, settable on Add Client modal and client detail modal. Pre-fills session mode in slot editor when a client is selected.
+- Dropped all Zoom references (none existed; confirmed clean).
+
+
+
 ### [pending] Fix: existing dashboard tasks not appearing in Google Tasks
 **Reported by Chirag**
 - **Root cause:** Tasks created in dashboard before two-way sync had no `gid` — they were never pushed to Google Tasks
